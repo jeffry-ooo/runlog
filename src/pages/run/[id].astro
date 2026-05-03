@@ -139,13 +139,13 @@ const hasTrack = a.track_lat && a.track_lat.length > 2;
           <div class="chart-label">SPLITS</div>
           <div class="splits-grid">
             {splits.map(s => (
-              <>
+              <Fragment>
                 <span>{s.partial ? `+${s.km}KM` : `KM ${s.km}`}</span>
                 <span>
                   {s.pace ? fmtPace(s.pace) : '—'}
                   {s.hr ? `  ${s.hr}BPM` : ''}
                 </span>
-              </>
+              </Fragment>
             ))}
           </div>
         </div>
