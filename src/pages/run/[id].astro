@@ -76,7 +76,7 @@ const trackData = JSON.stringify({
 <Base title={fmtDate(a.date, a.timezone)}>
   <div class="wrap">
     <div style="padding-top: var(--pad)">
-      <a href="/" class="detail-back">← BACK</a>
+      <a href={import.meta.env.BASE_URL} class="detail-back">← BACK</a>
       <hr class="rule" />
 
       {hasTrack && (
