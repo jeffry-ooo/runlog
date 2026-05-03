@@ -160,7 +160,7 @@ const hasTrack = a.track_lat && a.track_lat.length > 2;
   </div>
 </Base>
 
-<script define:vars={{ trackLat: a.track_lat, trackLng: a.track_lng, hrSeries: a.hr_series, hrAvg: a.heartrate_avg, hasTrack }}>
+<script is:inline define:vars={{ trackLat: a.track_lat, trackLng: a.track_lng, hrSeries: a.hr_series, hrAvg: a.heartrate_avg, hasTrack }}>
 // GPS TRACK
 if (hasTrack && trackLat && trackLat.length > 2) {
   const canvas = document.getElementById('map-canvas');
