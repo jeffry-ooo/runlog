@@ -1,0 +1,73 @@
+---
+import Base from '../layouts/Base.astro';
+import activities from '../../data/activities.json';
+
+// Group by month
+const groups = {};
+for (const a of activities) {
+  const key = new Date(a.date).toLocaleDateString('en-GB', {
+    month: 'long', year: 'numeric', timeZone: a.timezone
+  }).toUpperCase();
+  if (!groups[key]) groups[key] = [];
+  groups[key].push(a);
+}
+
+function fmtDist(m) {
+  return (m / 1000).toFixed(1) + 'KM';
+}
+
+function fmtDate(iso, tz) {
+  const today = new Date(new Date().toLocaleDateString('en-CA', { timeZone: tz }));
+  const runDay = new Date(new Date(iso).toLocaleDateString('en-CA', { timeZone: tz }));
+  const diff = Math.round((today.getTime() - runDay.getTime()) / 86400000);
+  if (diff === 0) return 'TODAY';
+  if (diff === 1) return 'YESTERDAY';
+  return new Date(iso).toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'long', timeZone: tz
+  }).toUpperCase();
+}
+
+function fmtTime(iso, tz) {
+  return new Date(iso).toLocaleTimeString('en-GB', {
+    hour: '2-digit', minute: '2-digit', timeZone: tz, hour12: false
+  });
+}
+
+function monthTotal(acts) {
+  return (acts.reduce((s, a) => s + a.distance_m, 0) / 1000).toFixed(0) + 'KM';
+}
+---
+
+<Base>
+  <div class="wrap">
+    <header class="site-header">
+      <span>RUNNING LOG</span>
+      <span></span>
+      <nav class="site-nav"><a href="/about">ABOUT</a></nav>
+    </header>
+
+    {Object.entries(groups).map(([month, acts]) => (
+      <div>
+        <div class="month-header">
+          <span>{month.split(' ')[0]}</span>
+          <span>TOTAL<br />{monthTotal(acts)}</span>
+        </div>
+        {acts.map(a => (
+          <div class="run-card">
+            <a href={`/run/${a.id}`}>
+              <div class="row-3">
+                <span>{fmtDate(a.date, a.timezone)}</span>
+                <span>{fmtTime(a.date, a.timezone)}</span>
+                <span>{a.temperature}°</span>
+              </div>
+              <div class="row-2"><span>DISTANCE</span><span>{fmtDist(a.distance_m)}</span></div>
+              <div class="row-2"><span>EFFORT</span><span>{a.effort}</span></div>
+              <div class="row-2"><span>AVG. HR</span><span>{a.heartrate_avg}BPM</span></div>
+            </a>
+            <div class="run-link"><a href={`/run/${a.id}`}>ALL</a></div>
+          </div>
+        ))}
+      </div>
+    ))}
+  </div>
+</Base>

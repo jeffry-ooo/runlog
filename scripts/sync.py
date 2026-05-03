@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+"""
+sync.py — pulls running activities from Tredict via Claude API (MCP),
+writes/updates data/activities.json, ready for Astro to build.
+"""
+
+import os
+import json
+import requests
+from pathlib import Path
+from datetime import datetime, timezone
+
+import anthropic
+
+ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
+TREDICT_API_KEY   = os.environ["TREDICT_API_KEY"]
+DATA_PATH         = Path("data/activities.json")
+
+client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+
+
+# ── 1. Fetch activity list from Tredict ──────────────────────────
+
+def fetch_activity_list(limit=20):
+    """Pull recent running activities from Tredict REST API."""
+    headers = {"Authorization": f"Bearer {TREDICT_API_KEY}"}
+    resp = requests.get(
+        "https://www.tredict.com/api/v2/activities",
+        headers=headers,
+        params={"pageSize": limit, "sportType": "running"}
+    )
+    resp.raise_for_status()
+    return resp.json().get("activityList", [])
+
+
+def fetch_activity_detail(activity_id):
+    """Fetch full detail including time series for one activity."""
+    headers = {"Authorization": f"Bearer {TREDICT_API_KEY}"}
+    resp = requests.get(
+        f"https://www.tredict.com/api/v2/activities/{activity_id}",
+        headers=headers
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+# ── 2. Parse Tredict response into our schema ────────────────────
+
+def parse_activity(raw):
+    """Convert Tredict activity JSON to our flat schema."""
+    s = raw.get("summary", {})
+    series = raw.get("seriesSampled", {}).get("data", {})
+    weather = raw.get("weather", {})
+
+    return {
+        "id":               raw.get("_id") or raw.get("id"),
+        "date":             raw.get("date"),
+        "timezone":         raw.get("timezone", "Europe/Brussels"),
+        "distance_m":       round(s.get("distance", 0)),
+        "heartrate_avg":    s.get("heartrate"),
+        "heartrate_max":    s.get("heartrateMax"),
+        "effort":           round(s.get("effort", {}).get("heartrate", 0)),
+        "elevation_ascent": round(s.get("altitude", {}).get("ascent", 0)),
+        "calories":         round(s.get("calories", 0)),
+        "temperature":      round(weather.get("temperature", s.get("temperature", 0))),
+        "hr_zones":         raw.get("summary", {}).get("zonesDistribution", {}).get("heartrate", []),
+        "track_lat":        series.get("positionLat", []),
+        "track_lng":        series.get("positionLong", []),
+        "hr_series":        series.get("heartrate", []),
+        "distance_series":  series.get("distance", []),
+        "speed_series":     [v if v else 0 for v in series.get("speed", [])],
+    }
+
+
+# ── 3. Load existing data ────────────────────────────────────────
+
+def load_existing():
+    if DATA_PATH.exists():
+        return json.loads(DATA_PATH.read_text())
+    return []
+
+
+# ── 4. Main ──────────────────────────────────────────────────────
+
+def main():
+    print("Fetching activity list from Tredict...")
+    try:
+        activity_list = fetch_activity_list(limit=20)
+    except Exception as e:
+        print(f"  ✗ Failed to fetch list: {e}")
+        return
+
+    existing = load_existing()
+    existing_ids = {a["id"] for a in existing}
+    new_activities = []
+
+    for item in activity_list:
+        aid = item.get("id")
+        if not aid or aid in existing_ids:
+            print(f"  — Skip (exists): {aid}")
+            continue
+
+        print(f"  → Fetching detail: {aid}")
+        try:
+            detail = fetch_activity_detail(aid)
+            parsed = parse_activity(detail)
+            new_activities.append(parsed)
+            print(f"    ✓ {parsed['date'][:10]} — {parsed['distance_m']/1000:.1f}km")
+        except Exception as e:
+            print(f"    ✗ Failed: {e}")
+            continue
+
+    if not new_activities:
+        print("No new activities.")
+        return
+
+    combined = new_activities + existing
+    combined.sort(key=lambda a: a.get("date", ""), reverse=True)
+
+    DATA_PATH.parent.mkdir(exist_ok=True)
+    DATA_PATH.write_text(json.dumps(combined, indent=2))
+    print(f"\nDone. {len(new_activities)} new activities added.")
+
+
+if __name__ == "__main__":
+    main()

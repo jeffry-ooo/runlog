@@ -1,0 +1,124 @@
+---
+const { title = 'RUNNING LOG' } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title} — JEFFRY.RUNNING</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:   #f2f0eb;
+      --ink:  #1a1814;
+      --rule: #ccc9c0;
+      --mono: 'IBM Plex Mono', monospace;
+      --fs:   13px;
+      --pad:  28px;
+      --col:  50%;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: var(--fs);
+      font-weight: 400;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: var(--fs);
+      font-weight: 400;
+    }
+
+    .wrap {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 var(--pad);
+    }
+
+    /* HEADER */
+    .site-header {
+      display: grid;
+      grid-template-columns: var(--col) 1fr auto;
+      padding: var(--pad) 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    .site-nav a { text-decoration: underline; }
+
+    /* MONTH */
+    .month-header {
+      display: grid;
+      grid-template-columns: var(--col) 1fr;
+      padding: var(--pad) 0 16px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    /* RUN CARD */
+    .run-card {
+      border-bottom: 1px solid var(--rule);
+      padding: 16px 0;
+    }
+    .run-card a { text-decoration: none; display: block; }
+
+    .row-3 {
+      display: grid;
+      grid-template-columns: var(--col) 1fr auto;
+      margin-bottom: 4px;
+    }
+    .row-2 {
+      display: grid;
+      grid-template-columns: var(--col) 1fr;
+    }
+    .run-link { margin-top: 8px; }
+    .run-link a { text-decoration: underline; }
+
+    /* DETAIL */
+    .detail-back {
+      text-decoration: underline;
+      display: block;
+      margin-bottom: 16px;
+    }
+    .rule { border: none; border-top: 1px solid var(--rule); }
+    .section {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    /* CHART LABELS */
+    .chart-label { margin-bottom: 10px; }
+
+    /* ZONES */
+    .zones-bar { display: flex; height: 4px; gap: 2px; margin-bottom: 10px; }
+    .zone-seg  { height: 100%; }
+    .zones-legend { display: flex; gap: 20px; flex-wrap: wrap; }
+    .zone-item { display: flex; align-items: center; gap: 6px; }
+    .zone-dot  { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    /* SPLITS */
+    .splits-grid {
+      display: grid;
+      grid-template-columns: var(--col) 1fr;
+      gap: 2px 0;
+    }
+
+    /* BEER */
+    .beer-row {
+      display: grid;
+      grid-template-columns: var(--col) 1fr;
+      padding: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <slot />
+</body>
+</html>
