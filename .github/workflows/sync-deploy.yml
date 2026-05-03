@@ -1,0 +1,95 @@
+name: Sync & Deploy
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Nightly at 05:00 UTC
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync activities from Tredict
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Run sync
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TREDICT_API_KEY: ${{ secrets.TREDICT_API_KEY }}
+        run: python scripts/sync.py
+
+      - name: Commit updated activities
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [[ -n "$(git status --porcelain data/activities.json)" ]]; then
+            git add data/activities.json
+            git commit -m "chore(data): nightly sync"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No changes."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    name: Build Astro site
+    needs: sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (latest after sync commit)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
