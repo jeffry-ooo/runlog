@@ -2,77 +2,75 @@
 import Base from '../../layouts/Base.astro';
 import activities from '../../../data/activities.json';
 
+export const prerender = true;
+
 export function getStaticPaths() {
-  return activities.map(a => ({ params: { id: a.id }, props: { activity: a } }));
+  return activities.map((a) => ({
+    params: { id: a.id },
+    props: { activity: a },
+  }));
 }
 
 const { activity: a } = Astro.props;
 
-function fmtDist(m) { return (m / 1000).toFixed(1) + 'KM'; }
-function fmtDate(iso, tz) {
-  const today = new Date(new Date().toLocaleDateString('en-CA', { timeZone: tz }));
-  const runDay = new Date(new Date(iso).toLocaleDateString('en-CA', { timeZone: tz }));
-  const diff = Math.round((today.getTime() - runDay.getTime()) / 86400000);
-  if (diff === 0) return 'TODAY';
-  if (diff === 1) return 'YESTERDAY';
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: tz }).toUpperCase();
-}
-function fmtTime(iso, tz) {
-  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz, hour12: false });
-}
-function fmtPace(secPerKm) {
+const fmtDist = (m) => (m / 1000).toFixed(1) + 'KM';
+const fmtPace = (secPerKm) => {
   const m = Math.floor(secPerKm / 60);
   const s = Math.round(secPerKm % 60).toString().padStart(2, '0');
   return `${m}:${s}/KM`;
-}
+};
+const fmtDate = (iso, tz) =>
+  new Date(iso)
+    .toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: tz })
+    .toUpperCase();
+const fmtTime = (iso, tz) =>
+  new Date(iso).toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: tz,
+    hour12: false,
+  });
 
-// Compute 1km splits from distance + speed series
-// series sampled every 12s * sampleSize seconds apart
-function computeSplits(distSeries, speedSeries, hrSeries, sampleSize = 12) {
+// Compute 1km splits
+function computeSplits(distSeries, speedSeries, hrSeries) {
   const splits = [];
-  let splitStart = 0;
   let splitNum = 1;
-  let hrAcc = [], paceAcc = [];
-
+  let hrAcc = [];
+  let paceAcc = [];
+  if (!distSeries || !speedSeries || !hrSeries) return splits;
   for (let i = 1; i < distSeries.length; i++) {
-    const dist = distSeries[i];
-    const threshold = splitNum * 1000;
-
     if (hrSeries[i]) hrAcc.push(hrSeries[i]);
-    if (speedSeries[i] > 0) paceAcc.push(1 / speedSeries[i]); // sec/m → invert speed
-
-    if (dist >= threshold) {
-      const avgHR = hrAcc.length ? Math.round(hrAcc.reduce((s, v) => s + v, 0) / hrAcc.length) : null;
-      // avg pace in sec/km
-      const avgPaceSecPerKm = paceAcc.length ? Math.round((paceAcc.reduce((s, v) => s + v, 0) / paceAcc.length) * 1000) : null;
-      splits.push({ km: splitNum, hr: avgHR, pace: avgPaceSecPerKm });
+    if (speedSeries[i] > 0) paceAcc.push(1 / speedSeries[i]);
+    if (distSeries[i] >= splitNum * 1000) {
+      const avgHR = hrAcc.length
+        ? Math.round(hrAcc.reduce((s, v) => s + v, 0) / hrAcc.length)
+        : null;
+      const avgPace = paceAcc.length
+        ? Math.round((paceAcc.reduce((s, v) => s + v, 0) / paceAcc.length) * 1000)
+        : null;
+      splits.push({ km: splitNum, hr: avgHR, pace: avgPace });
       splitNum++;
       hrAcc = [];
       paceAcc = [];
     }
   }
-
-  // last partial split if > 200m remaining
-  const lastDist = distSeries[distSeries.length - 1];
-  const partialDist = lastDist - (splitNum - 1) * 1000;
-  if (partialDist > 200 && hrAcc.length) {
-    const avgHR = Math.round(hrAcc.reduce((s, v) => s + v, 0) / hrAcc.length);
-    const avgPaceSecPerKm = paceAcc.length ? Math.round((paceAcc.reduce((s, v) => s + v, 0) / paceAcc.length) * 1000) : null;
-    splits.push({ km: `${(partialDist / 1000).toFixed(1)}`, hr: avgHR, pace: avgPaceSecPerKm, partial: true });
-  }
-
   return splits;
 }
 
-const splits = a.distance_series && a.speed_series && a.hr_series
-  ? computeSplits(a.distance_series, a.speed_series, a.hr_series)
-  : [];
-
-const ZONE_COLORS = ['#a8c5a0','#6faadc','#f0c060','#e88040','#d04040'];
-const ZONE_NAMES  = ['Z1','Z2','Z3','Z4','Z5'];
+const splits = computeSplits(a.distance_series, a.speed_series, a.hr_series);
+const ZONE_COLORS = ['#a8c5a0', '#6faadc', '#f0c060', '#e88040', '#d04040'];
+const ZONE_NAMES = ['Z1', 'Z2', 'Z3', 'Z4', 'Z5'];
 const totalZ = a.hr_zones ? a.hr_zones.reduce((s, v) => s + v, 0) : 0;
 const beers = Math.round(a.calories / 200);
 const hasTrack = a.track_lat && a.track_lat.length > 2;
+
+const trackData = JSON.stringify({
+  trackLat: a.track_lat || [],
+  trackLng: a.track_lng || [],
+  hrSeries: a.hr_series || [],
+  hrAvg: a.heartrate_avg || 0,
+  hasTrack,
+});
 ---
 
 <Base title={fmtDate(a.date, a.timezone)}>
@@ -87,7 +85,6 @@ const hasTrack = a.track_lat && a.track_lat.length > 2;
         </div>
       )}
 
-      <!-- METRICS -->
       <div class="section">
         <div class="row-3">
           <span>{fmtDate(a.date, a.timezone)}</span>
@@ -102,7 +99,6 @@ const hasTrack = a.track_lat && a.track_lat.length > 2;
         <div class="row-2"><span>CALORIES</span><span>{a.calories}KCAL</span></div>
       </div>
 
-      <!-- HR CHART -->
       {a.hr_series && a.hr_series.length > 0 && (
         <div class="section">
           <div class="chart-label">HEART RATE</div>
@@ -110,15 +106,14 @@ const hasTrack = a.track_lat && a.track_lat.length > 2;
         </div>
       )}
 
-      <!-- HR ZONES -->
       {a.hr_zones && totalZ > 0 && (
         <div class="section">
           <div class="chart-label">HR ZONES</div>
           <div class="zones-bar">
             {a.hr_zones.map((v, i) => {
-              const pct = totalZ > 0 ? (v / totalZ * 100).toFixed(1) : 0;
+              const pct = totalZ > 0 ? (v / totalZ) * 100 : 0;
               return pct > 0 ? (
-                <div class="zone-seg" style={`width:${pct}%;background:${ZONE_COLORS[i]}`}></div>
+                <div class="zone-seg" style={`width:${pct.toFixed(1)}%;background:${ZONE_COLORS[i]}`}></div>
               ) : null;
             })}
           </div>
@@ -133,14 +128,13 @@ const hasTrack = a.track_lat && a.track_lat.length > 2;
         </div>
       )}
 
-      <!-- SPLITS -->
       {splits.length > 0 && (
         <div class="section">
           <div class="chart-label">SPLITS</div>
           <div class="splits-grid">
-            {splits.map(s => (
+            {splits.map((s) => (
               <Fragment>
-                <span>{s.partial ? `+${s.km}KM` : `KM ${s.km}`}</span>
+                <span>KM {s.km}</span>
                 <span>
                   {s.pace ? fmtPace(s.pace) : '—'}
                   {s.hr ? `  ${s.hr}BPM` : ''}
@@ -151,108 +145,111 @@ const hasTrack = a.track_lat && a.track_lat.length > 2;
         </div>
       )}
 
-      <!-- BEER -->
       <div class="beer-row">
         <span>BEERS EARNED</span>
         <span>{beers}</span>
       </div>
     </div>
+
+    <script type="application/json" id="run-data" set:html={trackData}></script>
   </div>
 </Base>
 
-<script is:inline define:vars={{ trackLat: a.track_lat, trackLng: a.track_lng, hrSeries: a.hr_series, hrAvg: a.heartrate_avg, hasTrack }}>
-// GPS TRACK
-if (hasTrack && trackLat && trackLat.length > 2) {
-  const canvas = document.getElementById('map-canvas');
-  if (canvas) {
-    const dpr = window.devicePixelRatio || 1;
-    const w = canvas.parentElement.offsetWidth;
-    const h = 240;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    canvas.style.width = w + 'px';
-    canvas.style.height = h + 'px';
-    const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
+<script is:inline>
+  const data = JSON.parse(document.getElementById('run-data').textContent);
+  const { trackLat, trackLng, hrSeries, hrAvg, hasTrack } = data;
 
-    const pad = 28;
-    const lats = trackLat, lngs = trackLng;
-    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
-    const rangeW = maxLng - minLng || 0.001;
-    const rangeH = maxLat - minLat || 0.001;
-    const scaleX = (w - pad * 2) / rangeW;
-    const scaleY = (h - pad * 2) / rangeH;
-    const scale = Math.min(scaleX, scaleY);
-    const offX = (w - rangeW * scale) / 2;
-    const offY = (h - rangeH * scale) / 2;
-    const toX = lng => offX + (lng - minLng) * scale;
-    const toY = lat => h - offY - (lat - minLat) * scale;
+  if (hasTrack && trackLat && trackLat.length > 2) {
+    const canvas = document.getElementById('map-canvas');
+    if (canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.parentElement.offsetWidth;
+      const h = 240;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
 
-    ctx.beginPath();
-    ctx.moveTo(toX(lngs[0]), toY(lats[0]));
-    for (let i = 1; i < lats.length; i++) ctx.lineTo(toX(lngs[i]), toY(lats[i]));
-    ctx.strokeStyle = '#1a1814';
-    ctx.lineWidth = 1.5;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.stroke();
+      const pad = 28;
+      const lats = trackLat;
+      const lngs = trackLng;
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+      const rangeW = maxLng - minLng || 0.001;
+      const rangeH = maxLat - minLat || 0.001;
+      const scale = Math.min((w - pad * 2) / rangeW, (h - pad * 2) / rangeH);
+      const offX = (w - rangeW * scale) / 2;
+      const offY = (h - rangeH * scale) / 2;
+      const toX = (lng) => offX + (lng - minLng) * scale;
+      const toY = (lat) => h - offY - (lat - minLat) * scale;
 
-    ctx.beginPath();
-    ctx.arc(toX(lngs[0]), toY(lats[0]), 3, 0, Math.PI * 2);
-    ctx.fillStyle = '#1a1814';
-    ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(toX(lngs[0]), toY(lats[0]));
+      for (let i = 1; i < lats.length; i++) ctx.lineTo(toX(lngs[i]), toY(lats[i]));
+      ctx.strokeStyle = '#1a1814';
+      ctx.lineWidth = 1.5;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(toX(lngs[0]), toY(lats[0]), 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a1814';
+      ctx.fill();
+    }
   }
-}
 
-// HR CHART
-if (hrSeries && hrSeries.length > 0) {
-  const canvas = document.getElementById('hr-canvas');
-  if (canvas) {
-    const dpr = window.devicePixelRatio || 1;
-    const w = canvas.parentElement.offsetWidth;
-    const h = 64;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    canvas.style.width = w + 'px';
-    canvas.style.height = h + 'px';
-    const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
+  if (hrSeries && hrSeries.length > 0) {
+    const canvas = document.getElementById('hr-canvas');
+    if (canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.parentElement.offsetWidth;
+      const h = 64;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
 
-    const series = hrSeries;
-    const mn = Math.min(...series) - 8;
-    const mx = Math.max(...series) + 8;
-    const px = i => (i / (series.length - 1)) * w;
-    const py = v => h - ((v - mn) / (mx - mn)) * h;
+      const series = hrSeries;
+      const mn = Math.min(...series) - 8;
+      const mx = Math.max(...series) + 8;
+      const px = (i) => (i / (series.length - 1)) * w;
+      const py = (v) => h - ((v - mn) / (mx - mn)) * h;
 
-    const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, 'rgba(26,24,20,0.10)');
-    grad.addColorStop(1, 'rgba(26,24,20,0.00)');
-    ctx.beginPath();
-    ctx.moveTo(px(0), py(series[0]));
-    series.forEach((v, i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
-    ctx.lineTo(px(series.length - 1), h);
-    ctx.lineTo(0, h);
-    ctx.closePath();
-    ctx.fillStyle = grad;
-    ctx.fill();
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, 'rgba(26,24,20,0.10)');
+      grad.addColorStop(1, 'rgba(26,24,20,0.00)');
+      ctx.beginPath();
+      ctx.moveTo(px(0), py(series[0]));
+      series.forEach((v, i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
+      ctx.lineTo(px(series.length - 1), h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
 
-    ctx.beginPath();
-    ctx.moveTo(px(0), py(series[0]));
-    series.forEach((v, i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
-    ctx.strokeStyle = 'rgba(26,24,20,0.75)';
-    ctx.lineWidth = 1.5;
-    ctx.lineJoin = 'round';
-    ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(px(0), py(series[0]));
+      series.forEach((v, i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
+      ctx.strokeStyle = 'rgba(26,24,20,0.75)';
+      ctx.lineWidth = 1.5;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
 
-    ctx.beginPath();
-    ctx.setLineDash([3, 5]);
-    ctx.moveTo(0, py(hrAvg));
-    ctx.lineTo(w, py(hrAvg));
-    ctx.strokeStyle = 'rgba(26,24,20,0.2)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.setLineDash([3, 5]);
+      ctx.moveTo(0, py(hrAvg));
+      ctx.lineTo(w, py(hrAvg));
+      ctx.strokeStyle = 'rgba(26,24,20,0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
   }
-}
 </script>
