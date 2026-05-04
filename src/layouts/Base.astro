@@ -71,7 +71,7 @@ const base = import.meta.env.BASE_URL;
     /* RUN CARD */
     .run-card {
       border-bottom: 1px solid var(--rule);
-      padding: 16px 0;
+      padding: var(--gap) 0;
     }
     .run-card a { text-decoration: none; display: block; }
 
@@ -86,7 +86,7 @@ const base = import.meta.env.BASE_URL;
       grid-template-columns: var(--col) 1fr;
       line-height: var(--lh);
     }
-    .run-link { margin-top: 8px; }
+    .run-link { margin-top: calc(var(--gap) / 2); }
     .run-link a { text-decoration: underline; }
 
     /* DETAIL */
