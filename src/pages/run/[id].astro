@@ -25,32 +25,22 @@ const fmtDate = (iso, tz) =>
     .toUpperCase();
 const fmtTime = (iso, tz) =>
   new Date(iso).toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: tz,
-    hour12: false,
+    hour: '2-digit', minute: '2-digit', timeZone: tz, hour12: false,
   });
 
 function computeSplits(distSeries, speedSeries, hrSeries) {
   const splits = [];
   let splitNum = 1;
-  let hrAcc = [];
-  let paceAcc = [];
+  let hrAcc = [], paceAcc = [];
   if (!distSeries || !speedSeries || !hrSeries) return splits;
   for (let i = 1; i < distSeries.length; i++) {
     if (hrSeries[i]) hrAcc.push(hrSeries[i]);
     if (speedSeries[i] > 0) paceAcc.push(1 / speedSeries[i]);
     if (distSeries[i] >= splitNum * 1000) {
-      const avgHR = hrAcc.length
-        ? Math.round(hrAcc.reduce((s, v) => s + v, 0) / hrAcc.length)
-        : null;
-      const avgPace = paceAcc.length
-        ? Math.round((paceAcc.reduce((s, v) => s + v, 0) / paceAcc.length) * 1000)
-        : null;
+      const avgHR = hrAcc.length ? Math.round(hrAcc.reduce((s, v) => s + v, 0) / hrAcc.length) : null;
+      const avgPace = paceAcc.length ? Math.round((paceAcc.reduce((s, v) => s + v, 0) / paceAcc.length) * 1000) : null;
       splits.push({ km: splitNum, hr: avgHR, pace: avgPace });
-      splitNum++;
-      hrAcc = [];
-      paceAcc = [];
+      splitNum++; hrAcc = []; paceAcc = [];
     }
   }
   return splits;
@@ -58,34 +48,19 @@ function computeSplits(distSeries, speedSeries, hrSeries) {
 
 const splits = computeSplits(a.distance_series, a.speed_series, a.hr_series);
 const ZONE_COLORS = ['#a8c5a0', '#6faadc', '#f0c060', '#e88040', '#d04040'];
-const ZONE_NAMES = ['Z1', 'Z2', 'Z3', 'Z4', 'Z5'];
-const totalZ = a.hr_zones ? a.hr_zones.reduce((s, v) => s + v, 0) : 0;
-const beers = Math.round(a.calories / 200);
+const ZONE_NAMES  = ['Z1', 'Z2', 'Z3', 'Z4', 'Z5'];
+const totalZ  = a.hr_zones ? a.hr_zones.reduce((s, v) => s + v, 0) : 0;
+const beers   = Math.round(a.calories / 200);
 const hasTrack = !!(a.track_lat && a.track_lat.length > 2);
-const trackLat = a.track_lat || [];
-const trackLng = a.track_lng || [];
-const hrSeries = a.hr_series || [];
-const hrAvg = a.heartrate_avg || 0;
+const hasHR    = !!(a.hr_series && a.hr_series.length > 0);
+const base     = import.meta.env.BASE_URL;
 ---
 
 <Base title={fmtDate(a.date, a.timezone)}>
-  {hasTrack && (
-    <Fragment slot="head">
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-      <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    </Fragment>
-  )}
-
   <div class="wrap">
     <div style="padding-top: var(--pad)">
-      <a href={import.meta.env.BASE_URL} class="detail-back">← BACK</a>
+      <a href={base} class="detail-back">← BACK</a>
       <hr class="rule" />
-
-      {hasTrack && (
-        <div class="section" style="padding: 0; overflow: hidden;">
-          <div id="map" style="width:100%;height:280px;"></div>
-        </div>
-      )}
 
       <div class="section">
         <div class="row-3">
@@ -101,10 +76,17 @@ const hrAvg = a.heartrate_avg || 0;
         <div class="row-2"><span>CALORIES</span><span>{a.calories}KCAL</span></div>
       </div>
 
-      {hrSeries.length > 0 && (
+      {hasHR && (
         <div class="section">
           <div class="chart-label">HEART RATE</div>
-          <canvas id="hr-canvas" width="600" height="64" style="display:block;width:100%;height:64px;"></canvas>
+          <canvas
+            id="hr-canvas"
+            width="600"
+            height="64"
+            style="display:block;width:100%;height:64px;"
+            data-hr={JSON.stringify(a.hr_series)}
+            data-hr-avg={String(a.heartrate_avg || 0)}
+          ></canvas>
         </div>
       )}
 
@@ -151,61 +133,91 @@ const hrAvg = a.heartrate_avg || 0;
         <span>BEERS EARNED</span>
         <span>{beers}</span>
       </div>
+
+      {hasTrack && (
+        <div class="section" style="border-bottom: none; padding-bottom: 0;">
+          <canvas
+            id="track-canvas"
+            width="600"
+            height="200"
+            style="display:block;width:100%;height:200px;"
+            data-lat={JSON.stringify(a.track_lat)}
+            data-lng={JSON.stringify(a.track_lng)}
+          ></canvas>
+          <div class="row-2" style="margin-top: 12px;">
+            <span>GPX</span>
+            <span><a href={`${base}gpx/${a.id}.gpx`} style="text-decoration:underline;">↓ DOWNLOAD</a></span>
+          </div>
+        </div>
+      )}
     </div>
   </div>
 
-  <style>
-    #map {
-      filter: grayscale(1) contrast(1.1);
-    }
-    .grayscale-tiles {
-      filter: grayscale(1) contrast(1.1);
-    }
-  </style>
-
-  <script is:inline define:vars={{ trackLat, trackLng, hasTrack, hrSeries, hrAvg }}>
+  <script is:inline>
     document.addEventListener('DOMContentLoaded', function () {
 
-      // --- Leaflet map ---
-      if (hasTrack && trackLat.length > 2 && typeof L !== 'undefined') {
-        var mapEl = document.getElementById('map');
-        if (mapEl) {
-          var map = L.map('map', {
-            zoomControl: false,
-            attributionControl: false,
-            scrollWheelZoom: false,
-            dragging: false,
-          });
+      // ── GPS track canvas ──────────────────────────────────────
+      var trackEl = document.getElementById('track-canvas');
+      if (trackEl) {
+        var lats, lngs;
+        try {
+          lats = JSON.parse(trackEl.dataset.lat);
+          lngs = JSON.parse(trackEl.dataset.lng);
+        } catch (e) { lats = null; }
 
-          L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
-            className: 'grayscale-tiles',
-          }).addTo(map);
+        if (lats && lats.length > 2) {
+          var dpr = window.devicePixelRatio || 1;
+          var w = trackEl.parentElement.offsetWidth || 600;
+          var h = 200;
+          trackEl.width = w * dpr;
+          trackEl.height = h * dpr;
+          trackEl.style.width = w + 'px';
+          trackEl.style.height = h + 'px';
+          var ctx = trackEl.getContext('2d');
+          ctx.scale(dpr, dpr);
 
-          var coords = trackLat.map(function (lat, i) { return [lat, trackLng[i]]; });
+          var pad = 24;
+          var minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
+          var minLng = Math.min.apply(null, lngs), maxLng = Math.max.apply(null, lngs);
+          var rW = maxLng - minLng || 0.001, rH = maxLat - minLat || 0.001;
+          var sc = Math.min((w - pad * 2) / rW, (h - pad * 2) / rH);
+          var offX = (w - rW * sc) / 2, offY = (h - rH * sc) / 2;
+          var toX = function (lng) { return offX + (lng - minLng) * sc; };
+          var toY = function (lat) { return h - offY - (lat - minLat) * sc; };
 
-          L.polyline(coords, {
-            color: '#1a1814',
-            weight: 2.5,
-            opacity: 1,
-          }).addTo(map);
+          ctx.beginPath();
+          ctx.moveTo(toX(lngs[0]), toY(lats[0]));
+          for (var i = 1; i < lats.length; i++) ctx.lineTo(toX(lngs[i]), toY(lats[i]));
+          ctx.strokeStyle = '#1a1814';
+          ctx.lineWidth = 1.5;
+          ctx.lineJoin = 'round';
+          ctx.lineCap = 'round';
+          ctx.stroke();
 
-          map.fitBounds(coords, { padding: [24, 24] });
+          ctx.beginPath();
+          ctx.arc(toX(lngs[0]), toY(lats[0]), 3, 0, Math.PI * 2);
+          ctx.fillStyle = '#1a1814';
+          ctx.fill();
         }
       }
 
-      // --- HR canvas ---
-      if (hrSeries && hrSeries.length > 0) {
-        var hrc = document.getElementById('hr-canvas');
-        if (hrc) {
-          var dpr = window.devicePixelRatio || 1;
-          var hw = hrc.parentElement.offsetWidth || 600;
+      // ── HR chart canvas ───────────────────────────────────────
+      var hrEl = document.getElementById('hr-canvas');
+      if (hrEl) {
+        var hrSeries, hrAvg;
+        try { hrSeries = JSON.parse(hrEl.dataset.hr); } catch (e) { hrSeries = null; }
+        hrAvg = parseFloat(hrEl.dataset.hrAvg) || 0;
+
+        if (hrSeries && hrSeries.length > 0) {
+          var dpr2 = window.devicePixelRatio || 1;
+          var hw = hrEl.parentElement.offsetWidth || 600;
           var hh = 64;
-          hrc.width = hw * dpr;
-          hrc.height = hh * dpr;
-          hrc.style.width = hw + 'px';
-          hrc.style.height = hh + 'px';
-          var hctx = hrc.getContext('2d');
-          hctx.scale(dpr, dpr);
+          hrEl.width = hw * dpr2;
+          hrEl.height = hh * dpr2;
+          hrEl.style.width = hw + 'px';
+          hrEl.style.height = hh + 'px';
+          var hctx = hrEl.getContext('2d');
+          hctx.scale(dpr2, dpr2);
 
           var mn = Math.min.apply(null, hrSeries) - 8;
           var mx = Math.max.apply(null, hrSeries) + 8;

@@ -15,8 +15,33 @@ import anthropic
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 TREDICT_API_KEY   = os.environ["TREDICT_API_KEY"]
 DATA_PATH         = Path("data/activities.json")
+GPX_DIR           = Path("public/gpx")
 
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+
+
+def save_gpx(activity):
+    """Write a GPX file for an activity if it has GPS track data."""
+    lats = activity.get("track_lat", [])
+    lngs = activity.get("track_lng", [])
+    n = min(len(lats), len(lngs))
+    if n < 3:
+        return
+    GPX_DIR.mkdir(parents=True, exist_ok=True)
+    pts = "\n".join(
+        '      <trkpt lat="{:.5f}" lon="{:.5f}"></trkpt>'.format(lats[i], lngs[i])
+        for i in range(n)
+    )
+    gpx = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<gpx version="1.1" creator="jeffry.running" xmlns="http://www.topografix.com/GPX/1/1">\n'
+        '  <metadata><time>{}</time></metadata>\n'
+        '  <trk>\n    <trkseg>\n{}\n    </trkseg>\n  </trk>\n'
+        '</gpx>'
+    ).format(activity["date"], pts)
+    out = GPX_DIR / "{}.gpx".format(activity["id"])
+    out.write_text(gpx)
+    print("    ✓ GPX saved ({} pts)".format(n))
 
 
 # ── 1. Fetch activity list from Tredict ──────────────────────────
@@ -105,6 +130,7 @@ def main():
             detail = fetch_activity_detail(aid)
             parsed = parse_activity(detail)
             new_activities.append(parsed)
+            save_gpx(parsed)
             print(f"    ✓ {parsed['date'][:10]} — {parsed['distance_m']/1000:.1f}km")
         except Exception as e:
             print(f"    ✗ Failed: {e}")

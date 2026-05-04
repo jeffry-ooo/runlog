@@ -58,69 +58,10 @@ function monthTotal(acts) {
               <div class="row-2"><span>EFFORT</span><span>{a.effort}</span></div>
               <div class="row-2"><span>AVG. HR</span><span>{a.heartrate_avg}BPM</span></div>
             </a>
-            {(a.track_lat && a.track_lat.length > 2) && (
-              <canvas
-                class="card-map"
-                width="600"
-                height="120"
-                data-lat={JSON.stringify(a.track_lat)}
-                data-lng={JSON.stringify(a.track_lng)}
-              ></canvas>
-            )}
             <div class="run-link"><a href={`${import.meta.env.BASE_URL}run/${a.id}`}>→</a></div>
           </div>
         ))}
       </div>
     ))}
   </div>
-
-  <script is:inline>
-    document.addEventListener('DOMContentLoaded', function() {
-      document.querySelectorAll('canvas.card-map').forEach(function(canvas) {
-        var lats, lngs;
-        try {
-          lats = JSON.parse(canvas.dataset.lat);
-          lngs = JSON.parse(canvas.dataset.lng);
-        } catch(e) { return; }
-        if (!lats || lats.length < 3) return;
-
-        var dpr = window.devicePixelRatio || 1;
-        var w = canvas.parentElement.offsetWidth || 600;
-        var h = 120;
-        canvas.width = w * dpr;
-        canvas.height = h * dpr;
-        canvas.style.width = w + 'px';
-        canvas.style.height = '120px';
-        var ctx = canvas.getContext('2d');
-        ctx.scale(dpr, dpr);
-
-        var pad = 16;
-        var minLat = Math.min.apply(null, lats);
-        var maxLat = Math.max.apply(null, lats);
-        var minLng = Math.min.apply(null, lngs);
-        var maxLng = Math.max.apply(null, lngs);
-        var rW = maxLng - minLng || 0.001;
-        var rH = maxLat - minLat || 0.001;
-        var sc = Math.min((w - pad * 2) / rW, (h - pad * 2) / rH);
-        var offX = (w - rW * sc) / 2;
-        var offY = (h - rH * sc) / 2;
-        var toX = function(lng) { return offX + (lng - minLng) * sc; };
-        var toY = function(lat) { return h - offY - (lat - minLat) * sc; };
-
-        ctx.beginPath();
-        ctx.moveTo(toX(lngs[0]), toY(lats[0]));
-        for (var i = 1; i < lats.length; i++) ctx.lineTo(toX(lngs[i]), toY(lats[i]));
-        ctx.strokeStyle = '#1a1814';
-        ctx.lineWidth = 1.5;
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(toX(lngs[0]), toY(lats[0]), 3, 0, Math.PI * 2);
-        ctx.fillStyle = '#1a1814';
-        ctx.fill();
-      });
-    });
-  </script>
 </Base>
