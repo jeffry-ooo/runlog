@@ -40,12 +40,6 @@ function monthTotal(acts) {
 
 <Base>
   <div class="wrap">
-    <header class="site-header">
-      <span>RUNNING LOG</span>
-      <span></span>
-      <nav class="site-nav"><a href={`${import.meta.env.BASE_URL}about`}>ABOUT</a></nav>
-    </header>
-
     {Object.entries(groups).map(([month, acts]) => (
       <div>
         <div class="month-header">
@@ -64,7 +58,7 @@ function monthTotal(acts) {
               <div class="row-2"><span>EFFORT</span><span>{a.effort}</span></div>
               <div class="row-2"><span>AVG. HR</span><span>{a.heartrate_avg}BPM</span></div>
             </a>
-            <div class="run-link"><a href={`${import.meta.env.BASE_URL}run/${a.id}`}>ALL</a></div>
+            <div class="run-link"><a href={`${import.meta.env.BASE_URL}run/${a.id}`}>→</a></div>
           </div>
         ))}
       </div>

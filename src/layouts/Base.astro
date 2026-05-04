@@ -52,6 +52,8 @@ const { title = 'RUNNING LOG' } = Astro.props;
       padding: var(--pad) 0;
       border-bottom: 1px solid var(--rule);
     }
+    .site-header .logo { text-decoration: none; }
+    .site-nav { display: flex; gap: 20px; }
     .site-nav a { text-decoration: underline; }
 
     /* MONTH */
@@ -119,6 +121,17 @@ const { title = 'RUNNING LOG' } = Astro.props;
   </style>
 </head>
 <body>
+  <div class="wrap">
+    <header class="site-header">
+      <a href={import.meta.env.BASE_URL} class="logo">RUNNING LOG</a>
+      <span></span>
+      <nav class="site-nav">
+        <a href={`${import.meta.env.BASE_URL}about`}>ABOUT</a>
+        <a href="https://github.com/jeffry-ooo/runlog">SOURCE</a>
+        <a href={`${import.meta.env.BASE_URL}rss.xml`}>RSS</a>
+      </nav>
+    </header>
+  </div>
   <slot />
 </body>
 </html>
