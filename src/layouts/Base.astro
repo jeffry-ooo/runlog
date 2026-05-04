@@ -66,14 +66,6 @@ const base = import.meta.env.BASE_URL;
       display: inline-block;
     }
 
-    /* MONTH */
-    .month-header {
-      display: grid;
-      grid-template-columns: var(--col) 1fr;
-      padding: var(--pad) 0 16px;
-      border-bottom: 1px solid var(--rule);
-    }
-
     /* RUN CARD */
     .run-card {
       border-bottom: 1px solid var(--rule);
@@ -84,7 +76,6 @@ const base = import.meta.env.BASE_URL;
     .row-3 {
       display: grid;
       grid-template-columns: var(--col) 1fr auto;
-      margin-bottom: 4px;
     }
     .row-2 {
       display: grid;
@@ -94,11 +85,6 @@ const base = import.meta.env.BASE_URL;
     .run-link a { text-decoration: underline; }
 
     /* DETAIL */
-    .detail-back {
-      text-decoration: underline;
-      display: block;
-      margin-bottom: 16px;
-    }
     .rule { border: none; border-top: 1px solid var(--rule); }
     .section {
       padding: 16px 0;

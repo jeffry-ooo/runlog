@@ -2,16 +2,6 @@
 import Base from '../layouts/Base.astro';
 import activities from '../../data/activities.json';
 
-// Group by month
-const groups = {};
-for (const a of activities) {
-  const key = new Date(a.date).toLocaleDateString('en-GB', {
-    month: 'long', year: 'numeric', timeZone: a.timezone
-  }).toUpperCase();
-  if (!groups[key]) groups[key] = [];
-  groups[key].push(a);
-}
-
 function fmtDist(m) {
   return (m / 1000).toFixed(1) + 'KM';
 }
@@ -32,35 +22,23 @@ function fmtTime(iso, tz) {
     hour: '2-digit', minute: '2-digit', timeZone: tz, hour12: false
   });
 }
-
-function monthTotal(acts) {
-  return (acts.reduce((s, a) => s + a.distance_m, 0) / 1000).toFixed(0) + 'KM';
-}
 ---
 
 <Base>
   <div class="wrap">
-    {Object.entries(groups).map(([month, acts]) => (
-      <div>
-        <div class="month-header">
-          <span>{month.split(' ')[0]}</span>
-          <span>TOTAL<br />{monthTotal(acts)}</span>
-        </div>
-        {acts.map(a => (
-          <div class="run-card">
-            <a href={`${import.meta.env.BASE_URL}run/${a.id}`}>
-              <div class="row-3">
-                <span>{fmtDate(a.date, a.timezone)}</span>
-                <span>{fmtTime(a.date, a.timezone)}</span>
-                <span>{a.temperature}°</span>
-              </div>
-              <div class="row-2"><span>DISTANCE</span><span>{fmtDist(a.distance_m)}</span></div>
-              <div class="row-2"><span>EFFORT</span><span>{a.effort}</span></div>
-              <div class="row-2"><span>AVG. HR</span><span>{a.heartrate_avg}BPM</span></div>
-            </a>
-            <div class="run-link"><a href={`${import.meta.env.BASE_URL}run/${a.id}`}>→</a></div>
+    {activities.map(a => (
+      <div class="run-card">
+        <a href={`${import.meta.env.BASE_URL}run/${a.id}`}>
+          <div class="row-3">
+            <span>{fmtDate(a.date, a.timezone)}</span>
+            <span>{fmtTime(a.date, a.timezone)}</span>
+            <span>{a.temperature}°</span>
           </div>
-        ))}
+          <div class="row-2"><span>DISTANCE</span><span>{fmtDist(a.distance_m)}</span></div>
+          <div class="row-2"><span>EFFORT</span><span>{a.effort}</span></div>
+          <div class="row-2"><span>AVG. HR</span><span>{a.heartrate_avg}BPM</span></div>
+        </a>
+        <div class="run-link"><a href={`${import.meta.env.BASE_URL}run/${a.id}`}>ALL DATA</a></div>
       </div>
     ))}
   </div>
