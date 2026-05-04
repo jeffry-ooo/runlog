@@ -1,7 +1,6 @@
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
-  site: 'https://jeffry-ooo.github.io',
-  base: '/runlog/',
+  site: 'https://running.jeffry.ooo',
   output: 'static',
 });
