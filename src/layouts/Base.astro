@@ -20,7 +20,9 @@ const base = import.meta.env.BASE_URL;
       --rule: #ccc9c0;
       --mono: 'IBM Plex Mono', monospace;
       --fs:   13px;
+      --lh:   1.5;
       --pad:  28px;
+      --gap:  16px;
       --col:  50%;
     }
 
@@ -76,10 +78,13 @@ const base = import.meta.env.BASE_URL;
     .row-3 {
       display: grid;
       grid-template-columns: var(--col) 1fr auto;
+      line-height: var(--lh);
+      margin-bottom: 4px;
     }
     .row-2 {
       display: grid;
       grid-template-columns: var(--col) 1fr;
+      line-height: var(--lh);
     }
     .run-link { margin-top: 8px; }
     .run-link a { text-decoration: underline; }
@@ -87,7 +92,7 @@ const base = import.meta.env.BASE_URL;
     /* DETAIL */
     .rule { border: none; border-top: 1px solid var(--rule); }
     .section {
-      padding: 16px 0;
+      padding: var(--gap) 0;
       border-bottom: 1px solid var(--rule);
     }
 
@@ -112,7 +117,8 @@ const base = import.meta.env.BASE_URL;
     .beer-row {
       display: grid;
       grid-template-columns: var(--col) 1fr;
-      padding: 16px 0;
+      line-height: var(--lh);
+      padding: var(--gap) 0;
     }
 
   </style>
