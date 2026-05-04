@@ -31,7 +31,6 @@ const fmtTime = (iso, tz) =>
     hour12: false,
   });
 
-// Compute 1km splits
 function computeSplits(distSeries, speedSeries, hrSeries) {
   const splits = [];
   let splitNum = 1;
@@ -62,18 +61,21 @@ const ZONE_COLORS = ['#a8c5a0', '#6faadc', '#f0c060', '#e88040', '#d04040'];
 const ZONE_NAMES = ['Z1', 'Z2', 'Z3', 'Z4', 'Z5'];
 const totalZ = a.hr_zones ? a.hr_zones.reduce((s, v) => s + v, 0) : 0;
 const beers = Math.round(a.calories / 200);
-const hasTrack = a.track_lat && a.track_lat.length > 2;
-
-const trackData = JSON.stringify({
-  trackLat: a.track_lat || [],
-  trackLng: a.track_lng || [],
-  hrSeries: a.hr_series || [],
-  hrAvg: a.heartrate_avg || 0,
-  hasTrack,
-});
+const hasTrack = !!(a.track_lat && a.track_lat.length > 2);
+const trackLat = a.track_lat || [];
+const trackLng = a.track_lng || [];
+const hrSeries = a.hr_series || [];
+const hrAvg = a.heartrate_avg || 0;
 ---
 
 <Base title={fmtDate(a.date, a.timezone)}>
+  {hasTrack && (
+    <Fragment slot="head">
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    </Fragment>
+  )}
+
   <div class="wrap">
     <div style="padding-top: var(--pad)">
       <a href={import.meta.env.BASE_URL} class="detail-back">← BACK</a>
@@ -81,7 +83,7 @@ const trackData = JSON.stringify({
 
       {hasTrack && (
         <div class="section" style="padding: 0; overflow: hidden;">
-          <canvas id="map-canvas" width="600" height="240" style="display:block;width:100%;height:240px;background:#efefef;"></canvas>
+          <div id="map" style="width:100%;height:280px;"></div>
         </div>
       )}
 
@@ -99,7 +101,7 @@ const trackData = JSON.stringify({
         <div class="row-2"><span>CALORIES</span><span>{a.calories}KCAL</span></div>
       </div>
 
-      {a.hr_series && a.hr_series.length > 0 && (
+      {hrSeries.length > 0 && (
         <div class="section">
           <div class="chart-label">HEART RATE</div>
           <canvas id="hr-canvas" width="600" height="64" style="display:block;width:100%;height:64px;"></canvas>
@@ -150,91 +152,81 @@ const trackData = JSON.stringify({
         <span>{beers}</span>
       </div>
     </div>
-
-    <script type="application/json" id="run-data" set:html={trackData}></script>
   </div>
 
-  <script is:inline>
-    document.addEventListener('DOMContentLoaded', function() {
-      var raw = document.getElementById('run-data');
-      if (!raw) return;
-      var data;
-      try { data = JSON.parse(raw.textContent); } catch(e) { return; }
-      var trackLat = data.trackLat, trackLng = data.trackLng;
-      var hrSeries = data.hrSeries, hrAvg = data.hrAvg, hasTrack = data.hasTrack;
+  <style>
+    #map {
+      filter: grayscale(1) contrast(1.1);
+    }
+    .grayscale-tiles {
+      filter: grayscale(1) contrast(1.1);
+    }
+  </style>
 
-      if (hasTrack && trackLat && trackLat.length > 2) {
-        var canvas = document.getElementById('map-canvas');
-        if (canvas) {
-          var dpr = window.devicePixelRatio || 1;
-          var w = canvas.parentElement.offsetWidth || 600;
-          var h = 240;
-          canvas.width = w * dpr;
-          canvas.height = h * dpr;
-          canvas.style.width = w + 'px';
-          canvas.style.height = h + 'px';
-          var ctx = canvas.getContext('2d');
-          ctx.scale(dpr, dpr);
+  <script is:inline define:vars={{ trackLat, trackLng, hasTrack, hrSeries, hrAvg }}>
+    document.addEventListener('DOMContentLoaded', function () {
 
-          var pad = 28;
-          var lats = trackLat, lngs = trackLng;
-          var minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
-          var minLng = Math.min.apply(null, lngs), maxLng = Math.max.apply(null, lngs);
-          var rW = maxLng - minLng || 0.001, rH = maxLat - minLat || 0.001;
-          var sc = Math.min((w - pad * 2) / rW, (h - pad * 2) / rH);
-          var offX = (w - rW * sc) / 2, offY = (h - rH * sc) / 2;
-          var toX = function(lng) { return offX + (lng - minLng) * sc; };
-          var toY = function(lat) { return h - offY - (lat - minLat) * sc; };
+      // --- Leaflet map ---
+      if (hasTrack && trackLat.length > 2 && typeof L !== 'undefined') {
+        var mapEl = document.getElementById('map');
+        if (mapEl) {
+          var map = L.map('map', {
+            zoomControl: false,
+            attributionControl: false,
+            scrollWheelZoom: false,
+            dragging: false,
+          });
 
-          ctx.beginPath();
-          ctx.moveTo(toX(lngs[0]), toY(lats[0]));
-          for (var i = 1; i < lats.length; i++) ctx.lineTo(toX(lngs[i]), toY(lats[i]));
-          ctx.strokeStyle = '#1a1814';
-          ctx.lineWidth = 1.5;
-          ctx.lineJoin = 'round';
-          ctx.lineCap = 'round';
-          ctx.stroke();
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+            className: 'grayscale-tiles',
+          }).addTo(map);
 
-          ctx.beginPath();
-          ctx.arc(toX(lngs[0]), toY(lats[0]), 3, 0, Math.PI * 2);
-          ctx.fillStyle = '#1a1814';
-          ctx.fill();
+          var coords = trackLat.map(function (lat, i) { return [lat, trackLng[i]]; });
+
+          L.polyline(coords, {
+            color: '#1a1814',
+            weight: 2.5,
+            opacity: 1,
+          }).addTo(map);
+
+          map.fitBounds(coords, { padding: [24, 24] });
         }
       }
 
+      // --- HR canvas ---
       if (hrSeries && hrSeries.length > 0) {
         var hrc = document.getElementById('hr-canvas');
         if (hrc) {
-          var dpr2 = window.devicePixelRatio || 1;
+          var dpr = window.devicePixelRatio || 1;
           var hw = hrc.parentElement.offsetWidth || 600;
           var hh = 64;
-          hrc.width = hw * dpr2;
-          hrc.height = hh * dpr2;
+          hrc.width = hw * dpr;
+          hrc.height = hh * dpr;
           hrc.style.width = hw + 'px';
           hrc.style.height = hh + 'px';
           var hctx = hrc.getContext('2d');
-          hctx.scale(dpr2, dpr2);
+          hctx.scale(dpr, dpr);
 
           var mn = Math.min.apply(null, hrSeries) - 8;
           var mx = Math.max.apply(null, hrSeries) + 8;
-          var px = function(i) { return (i / (hrSeries.length - 1)) * hw; };
-          var py = function(v) { return hh - ((v - mn) / (mx - mn)) * hh; };
+          var hpx = function (i) { return (i / (hrSeries.length - 1)) * hw; };
+          var hpy = function (v) { return hh - ((v - mn) / (mx - mn)) * hh; };
 
           var grad = hctx.createLinearGradient(0, 0, 0, hh);
           grad.addColorStop(0, 'rgba(26,24,20,0.10)');
           grad.addColorStop(1, 'rgba(26,24,20,0.00)');
           hctx.beginPath();
-          hctx.moveTo(px(0), py(hrSeries[0]));
-          for (var j = 1; j < hrSeries.length; j++) hctx.lineTo(px(j), py(hrSeries[j]));
-          hctx.lineTo(px(hrSeries.length - 1), hh);
+          hctx.moveTo(hpx(0), hpy(hrSeries[0]));
+          for (var j = 1; j < hrSeries.length; j++) hctx.lineTo(hpx(j), hpy(hrSeries[j]));
+          hctx.lineTo(hpx(hrSeries.length - 1), hh);
           hctx.lineTo(0, hh);
           hctx.closePath();
           hctx.fillStyle = grad;
           hctx.fill();
 
           hctx.beginPath();
-          hctx.moveTo(px(0), py(hrSeries[0]));
-          for (var k = 1; k < hrSeries.length; k++) hctx.lineTo(px(k), py(hrSeries[k]));
+          hctx.moveTo(hpx(0), hpy(hrSeries[0]));
+          for (var k = 1; k < hrSeries.length; k++) hctx.lineTo(hpx(k), hpy(hrSeries[k]));
           hctx.strokeStyle = 'rgba(26,24,20,0.75)';
           hctx.lineWidth = 1.5;
           hctx.lineJoin = 'round';
@@ -242,8 +234,8 @@ const trackData = JSON.stringify({
 
           hctx.setLineDash([3, 5]);
           hctx.beginPath();
-          hctx.moveTo(0, py(hrAvg));
-          hctx.lineTo(hw, py(hrAvg));
+          hctx.moveTo(0, hpy(hrAvg));
+          hctx.lineTo(hw, hpy(hrAvg));
           hctx.strokeStyle = 'rgba(26,24,20,0.2)';
           hctx.lineWidth = 1;
           hctx.stroke();
