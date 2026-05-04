@@ -81,7 +81,7 @@ const trackData = JSON.stringify({
 
       {hasTrack && (
         <div class="section" style="padding: 0; overflow: hidden;">
-          <canvas id="map-canvas" style="display:block;width:100%;height:240px;background:#e8e5de;"></canvas>
+          <canvas id="map-canvas" width="600" height="240" style="display:block;width:100%;height:240px;background:#efefef;"></canvas>
         </div>
       )}
 
@@ -102,7 +102,7 @@ const trackData = JSON.stringify({
       {a.hr_series && a.hr_series.length > 0 && (
         <div class="section">
           <div class="chart-label">HEART RATE</div>
-          <canvas id="hr-canvas" style="display:block;width:100%;height:64px;"></canvas>
+          <canvas id="hr-canvas" width="600" height="64" style="display:block;width:100%;height:64px;"></canvas>
         </div>
       )}
 
@@ -153,103 +153,103 @@ const trackData = JSON.stringify({
 
     <script type="application/json" id="run-data" set:html={trackData}></script>
   </div>
+
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      var raw = document.getElementById('run-data');
+      if (!raw) return;
+      var data;
+      try { data = JSON.parse(raw.textContent); } catch(e) { return; }
+      var trackLat = data.trackLat, trackLng = data.trackLng;
+      var hrSeries = data.hrSeries, hrAvg = data.hrAvg, hasTrack = data.hasTrack;
+
+      if (hasTrack && trackLat && trackLat.length > 2) {
+        var canvas = document.getElementById('map-canvas');
+        if (canvas) {
+          var dpr = window.devicePixelRatio || 1;
+          var w = canvas.parentElement.offsetWidth || 600;
+          var h = 240;
+          canvas.width = w * dpr;
+          canvas.height = h * dpr;
+          canvas.style.width = w + 'px';
+          canvas.style.height = h + 'px';
+          var ctx = canvas.getContext('2d');
+          ctx.scale(dpr, dpr);
+
+          var pad = 28;
+          var lats = trackLat, lngs = trackLng;
+          var minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
+          var minLng = Math.min.apply(null, lngs), maxLng = Math.max.apply(null, lngs);
+          var rW = maxLng - minLng || 0.001, rH = maxLat - minLat || 0.001;
+          var sc = Math.min((w - pad * 2) / rW, (h - pad * 2) / rH);
+          var offX = (w - rW * sc) / 2, offY = (h - rH * sc) / 2;
+          var toX = function(lng) { return offX + (lng - minLng) * sc; };
+          var toY = function(lat) { return h - offY - (lat - minLat) * sc; };
+
+          ctx.beginPath();
+          ctx.moveTo(toX(lngs[0]), toY(lats[0]));
+          for (var i = 1; i < lats.length; i++) ctx.lineTo(toX(lngs[i]), toY(lats[i]));
+          ctx.strokeStyle = '#1a1814';
+          ctx.lineWidth = 1.5;
+          ctx.lineJoin = 'round';
+          ctx.lineCap = 'round';
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(toX(lngs[0]), toY(lats[0]), 3, 0, Math.PI * 2);
+          ctx.fillStyle = '#1a1814';
+          ctx.fill();
+        }
+      }
+
+      if (hrSeries && hrSeries.length > 0) {
+        var hrc = document.getElementById('hr-canvas');
+        if (hrc) {
+          var dpr2 = window.devicePixelRatio || 1;
+          var hw = hrc.parentElement.offsetWidth || 600;
+          var hh = 64;
+          hrc.width = hw * dpr2;
+          hrc.height = hh * dpr2;
+          hrc.style.width = hw + 'px';
+          hrc.style.height = hh + 'px';
+          var hctx = hrc.getContext('2d');
+          hctx.scale(dpr2, dpr2);
+
+          var mn = Math.min.apply(null, hrSeries) - 8;
+          var mx = Math.max.apply(null, hrSeries) + 8;
+          var px = function(i) { return (i / (hrSeries.length - 1)) * hw; };
+          var py = function(v) { return hh - ((v - mn) / (mx - mn)) * hh; };
+
+          var grad = hctx.createLinearGradient(0, 0, 0, hh);
+          grad.addColorStop(0, 'rgba(26,24,20,0.10)');
+          grad.addColorStop(1, 'rgba(26,24,20,0.00)');
+          hctx.beginPath();
+          hctx.moveTo(px(0), py(hrSeries[0]));
+          for (var j = 1; j < hrSeries.length; j++) hctx.lineTo(px(j), py(hrSeries[j]));
+          hctx.lineTo(px(hrSeries.length - 1), hh);
+          hctx.lineTo(0, hh);
+          hctx.closePath();
+          hctx.fillStyle = grad;
+          hctx.fill();
+
+          hctx.beginPath();
+          hctx.moveTo(px(0), py(hrSeries[0]));
+          for (var k = 1; k < hrSeries.length; k++) hctx.lineTo(px(k), py(hrSeries[k]));
+          hctx.strokeStyle = 'rgba(26,24,20,0.75)';
+          hctx.lineWidth = 1.5;
+          hctx.lineJoin = 'round';
+          hctx.stroke();
+
+          hctx.setLineDash([3, 5]);
+          hctx.beginPath();
+          hctx.moveTo(0, py(hrAvg));
+          hctx.lineTo(hw, py(hrAvg));
+          hctx.strokeStyle = 'rgba(26,24,20,0.2)';
+          hctx.lineWidth = 1;
+          hctx.stroke();
+          hctx.setLineDash([]);
+        }
+      }
+    });
+  </script>
 </Base>
-
-<script is:inline>
-  const data = JSON.parse(document.getElementById('run-data').textContent);
-  const { trackLat, trackLng, hrSeries, hrAvg, hasTrack } = data;
-
-  if (hasTrack && trackLat && trackLat.length > 2) {
-    const canvas = document.getElementById('map-canvas');
-    if (canvas) {
-      const dpr = window.devicePixelRatio || 1;
-      const w = canvas.parentElement.offsetWidth;
-      const h = 240;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = w + 'px';
-      canvas.style.height = h + 'px';
-      const ctx = canvas.getContext('2d');
-      ctx.scale(dpr, dpr);
-
-      const pad = 28;
-      const lats = trackLat;
-      const lngs = trackLng;
-      const minLat = Math.min(...lats);
-      const maxLat = Math.max(...lats);
-      const minLng = Math.min(...lngs);
-      const maxLng = Math.max(...lngs);
-      const rangeW = maxLng - minLng || 0.001;
-      const rangeH = maxLat - minLat || 0.001;
-      const scale = Math.min((w - pad * 2) / rangeW, (h - pad * 2) / rangeH);
-      const offX = (w - rangeW * scale) / 2;
-      const offY = (h - rangeH * scale) / 2;
-      const toX = (lng) => offX + (lng - minLng) * scale;
-      const toY = (lat) => h - offY - (lat - minLat) * scale;
-
-      ctx.beginPath();
-      ctx.moveTo(toX(lngs[0]), toY(lats[0]));
-      for (let i = 1; i < lats.length; i++) ctx.lineTo(toX(lngs[i]), toY(lats[i]));
-      ctx.strokeStyle = '#1a1814';
-      ctx.lineWidth = 1.5;
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(toX(lngs[0]), toY(lats[0]), 3, 0, Math.PI * 2);
-      ctx.fillStyle = '#1a1814';
-      ctx.fill();
-    }
-  }
-
-  if (hrSeries && hrSeries.length > 0) {
-    const canvas = document.getElementById('hr-canvas');
-    if (canvas) {
-      const dpr = window.devicePixelRatio || 1;
-      const w = canvas.parentElement.offsetWidth;
-      const h = 64;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = w + 'px';
-      canvas.style.height = h + 'px';
-      const ctx = canvas.getContext('2d');
-      ctx.scale(dpr, dpr);
-
-      const series = hrSeries;
-      const mn = Math.min(...series) - 8;
-      const mx = Math.max(...series) + 8;
-      const px = (i) => (i / (series.length - 1)) * w;
-      const py = (v) => h - ((v - mn) / (mx - mn)) * h;
-
-      const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, 'rgba(26,24,20,0.10)');
-      grad.addColorStop(1, 'rgba(26,24,20,0.00)');
-      ctx.beginPath();
-      ctx.moveTo(px(0), py(series[0]));
-      series.forEach((v, i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
-      ctx.lineTo(px(series.length - 1), h);
-      ctx.lineTo(0, h);
-      ctx.closePath();
-      ctx.fillStyle = grad;
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(px(0), py(series[0]));
-      series.forEach((v, i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
-      ctx.strokeStyle = 'rgba(26,24,20,0.75)';
-      ctx.lineWidth = 1.5;
-      ctx.lineJoin = 'round';
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.setLineDash([3, 5]);
-      ctx.moveTo(0, py(hrAvg));
-      ctx.lineTo(w, py(hrAvg));
-      ctx.strokeStyle = 'rgba(26,24,20,0.2)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-  }
-</script>
