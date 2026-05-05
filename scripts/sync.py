@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 sync.py — fetches new running activities from Tredict via the Anthropic API
-(claude-sonnet-4-20250514 + Tredict MCP server), writes data/activities.json.
+(claude-sonnet-4-6 + Tredict MCP server), writes data/activities.json.
 """
 
 import json
@@ -77,13 +77,16 @@ def fetch_new_activities(known_ids):
     known_list = sorted(known_ids)
     prompt = (
         "Fetch all running activities from Tredict since 2026-04-01 using the activity-list tool.\n"
-        f"For each activity whose id is NOT in this list: {known_list}\n"
+        "IMPORTANT: Only process activities where sportType == 'running'. "
+        "Skip any misc, cycling, swimming, indoor_rowing, or other non-running activities entirely.\n"
+        f"For each running activity whose id is NOT in this list: {known_list}\n"
         "call the activity tool to get full detail including time series.\n"
         "Return ONLY a valid JSON array with no preamble or explanation. Each object must have:\n"
-        "  id, date, timezone, distance_m, heartrate_avg, heartrate_max, effort,\n"
+        "  sportType, id, date, timezone, distance_m, heartrate_avg, heartrate_max, effort,\n"
         "  elevation_ascent, calories, temperature, hr_zones,\n"
         "  track_lat, track_lng, hr_series, distance_series, speed_series\n"
         "Use these mappings from the Tredict activity detail response:\n"
+        "  sportType     ← sportType (must be 'running')\n"
         "  id            ← _id or id\n"
         "  date          ← date\n"
         "  timezone      ← timezone (default 'Europe/Brussels')\n"
@@ -107,7 +110,7 @@ def fetch_new_activities(known_ids):
     print("  Calling Anthropic API with Tredict MCP server...")
 
     response = client.beta.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=16000,
         messages=[{"role": "user", "content": prompt}],
         mcp_servers=[MCP_SERVER],
@@ -141,6 +144,20 @@ def main():
 
     if not new_activities:
         print("No new activities.")
+        return
+
+    # Safety filter: discard anything Claude returned that isn't running
+    before = len(new_activities)
+    new_activities = [a for a in new_activities if a.get("sportType", "running") == "running"]
+    if len(new_activities) < before:
+        print(f"  ⚠ Dropped {before - len(new_activities)} non-running activities")
+
+    # Strip sportType — it's not part of the stored schema
+    for a in new_activities:
+        a.pop("sportType", None)
+
+    if not new_activities:
+        print("No new running activities after filtering.")
         return
 
     print(f"  {len(new_activities)} new activity/activities returned")
