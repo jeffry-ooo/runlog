@@ -45,15 +45,18 @@ def save_gpx(activity):
 # ── 1. Fetch activity list from Tredict ──────────────────────────
 
 def fetch_activity_list(limit=20):
-    """Pull recent running activities from Tredict REST API."""
+    """Pull recent activities from Tredict REST API and filter for running."""
     headers = {"Authorization": f"Bearer {TREDICT_API_KEY}"}
     resp = requests.get(
         f"{TREDICT_BASE}/activityList",
         headers=headers,
-        params={"pageSize": limit, "sportType": "running"}
+        params={"pageSize": limit}
     )
     resp.raise_for_status()
-    return resp.json().get("activityList", [])
+    all_activities = resp.json().get("activityList", [])
+    activity_list = [a for a in all_activities if a.get("sportType") == "running"]
+    print(f"  Found {len(activity_list)} running activities")
+    return activity_list
 
 
 def fetch_activity_detail(activity_id):
