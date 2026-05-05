@@ -1,0 +1,132 @@
+{
+  "timestamp": "2026-05-05T20:52:18Z",
+  "results": [
+    {
+      "endpoint": "/api/v2/activities",
+      "auth": "Bearer",
+      "status": 401,
+      "success": false,
+      "response_preview": "<!doctype html> <html lang=\"en\">   <head>     <meta charset=\"utf-8\">     <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">     <meta http-equiv=\"Content-Security-Policy\" content=\""
+    },
+    {
+      "endpoint": "/api/v2/activities",
+      "auth": "Token",
+      "status": 401,
+      "success": false,
+      "response_preview": "<!doctype html> <html lang=\"en\">   <head>     <meta charset=\"utf-8\">     <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">     <meta http-equiv=\"Content-Security-Policy\" content=\""
+    },
+    {
+      "endpoint": "/api/v2/activities",
+      "auth": "XApiKey",
+      "status": 401,
+      "success": false,
+      "response_preview": "<!doctype html> <html lang=\"en\">   <head>     <meta charset=\"utf-8\">     <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">     <meta http-equiv=\"Content-Security-Policy\" content=\""
+    },
+    {
+      "endpoint": "/api/v2/activityList",
+      "auth": "Bearer",
+      "status": 401,
+      "success": false,
+      "response_preview": "<!doctype html> <html lang=\"en\">   <head>     <meta charset=\"utf-8\">     <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">     <meta http-equiv=\"Content-Security-Policy\" content=\""
+    },
+    {
+      "endpoint": "/api/v2/activityList",
+      "auth": "Token",
+      "status": 401,
+      "success": false,
+      "response_preview": "<!doctype html> <html lang=\"en\">   <head>     <meta charset=\"utf-8\">     <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">     <meta http-equiv=\"Content-Security-Policy\" content=\""
+    },
+    {
+      "endpoint": "/api/v2/activityList",
+      "auth": "XApiKey",
+      "status": 401,
+      "success": false,
+      "response_preview": "<!doctype html> <html lang=\"en\">   <head>     <meta charset=\"utf-8\">     <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">     <meta http-equiv=\"Content-Security-Policy\" content=\""
+    },
+    {
+      "endpoint": "/api/oauth/v2/activities",
+      "auth": "Bearer",
+      "status": 404,
+      "success": false,
+      "response_preview": "Not Found"
+    },
+    {
+      "endpoint": "/api/oauth/v2/activities",
+      "auth": "Token",
+      "status": 404,
+      "success": false,
+      "response_preview": "Not Found"
+    },
+    {
+      "endpoint": "/api/oauth/v2/activities",
+      "auth": "XApiKey",
+      "status": 404,
+      "success": false,
+      "response_preview": "Not Found"
+    },
+    {
+      "endpoint": "/api/oauth/v2/activityList",
+      "auth": "Bearer",
+      "status": 200,
+      "success": true,
+      "response_preview": "{\"_links\":{\"self\":{\"href\":\"https://www.tredict.com/api/oauth/v2/activityList?pageSize=500\"}},\"count\":71,\"_embedded\":{\"activityList\":[{\"_links\":{\"self\":{\"href\":\"https://www.tredict.com/api/oauth/v2/act"
+    },
+    {
+      "endpoint": "/api/oauth/v2/activityList",
+      "auth": "Token",
+      "status": 401,
+      "success": false,
+      "response_preview": "Unauthorized"
+    },
+    {
+      "endpoint": "/api/oauth/v2/activityList",
+      "auth": "XApiKey",
+      "status": 401,
+      "success": false,
+      "response_preview": "Unauthorized"
+    },
+    {
+      "endpoint": "/api/mcp/v2/activities",
+      "auth": "Bearer",
+      "status": 404,
+      "success": false,
+      "response_preview": "Not Found"
+    },
+    {
+      "endpoint": "/api/mcp/v2/activities",
+      "auth": "Token",
+      "status": 401,
+      "success": false,
+      "response_preview": "Unauthorized"
+    },
+    {
+      "endpoint": "/api/mcp/v2/activities",
+      "auth": "XApiKey",
+      "status": 401,
+      "success": false,
+      "response_preview": "Unauthorized"
+    },
+    {
+      "endpoint": "/api/mcp/v2/activityList",
+      "auth": "Bearer",
+      "status": 404,
+      "success": false,
+      "response_preview": "Not Found"
+    },
+    {
+      "endpoint": "/api/mcp/v2/activityList",
+      "auth": "Token",
+      "status": 401,
+      "success": false,
+      "response_preview": "Unauthorized"
+    },
+    {
+      "endpoint": "/api/mcp/v2/activityList",
+      "auth": "XApiKey",
+      "status": 401,
+      "success": false,
+      "response_preview": "Unauthorized"
+    }
+  ],
+  "summary": "1/18 combinations succeeded"
+}
