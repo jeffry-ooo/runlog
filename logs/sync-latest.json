@@ -1,40 +1,13 @@
 {
-  "timestamp": "2026-05-05T20:58:05Z",
+  "timestamp": "2026-05-05T20:59:39Z",
   "connectivity": {
     "ok": true,
     "detail": "200"
   },
   "total_on_tredict": 71,
   "skipped_non_running": 37,
-  "already_known": 8,
-  "new_activities": [
-    "pPrqCKRqiDCKpm9qfU2MrD",
-    "q1u4MoiDhKLRtix8zvjkW6",
-    "c4ndo4XQSdqf8phXnnSbmA",
-    "5AqN8QAMGbyx35rvs52TYL",
-    "sXXPoYcBwdsRpQFeEUCUnP",
-    "5zFRRZZVr8inVrjQWHuDcS",
-    "2yLWqxVXfi9mfC1JUUnwNe",
-    "mVaYDSbEndj7DQe3ztinKJ",
-    "c6BegtmFJjDC9Hup5vWnZV",
-    "8AriH3tXvTEiUJhhcjAa8J",
-    "iwkvy1mbDtJtC1YJY7S96h",
-    "E8hZhC7Ud3nTyNq8tNGVt",
-    "nfPcZPE35KYmqRg4TsrUpD",
-    "mry1vt4SuHrKxujHgfRAdh",
-    "t8ai3981r7oDymfFyvdvpS",
-    "foQuJeMVVVkUVk9ZXjcT2",
-    "fPjkbfiUtHzgZYWHhc4MuR",
-    "chdhGgpcsvhGEAvoaScu6j",
-    "kCSwi7JMwCXHdwZWmfQXAT",
-    "4SgyPHWn41SsnmxZVSpPDQ",
-    "eUpE7nANaYnpamAUeTgR1m",
-    "cjcNdX2m5JH9CetKztgF1E",
-    "9zLtZ7RTNM9Ns7oY9KWxuh",
-    "j9k1dcYSB4FupamAfMFgoo",
-    "iQDezUxf7jWuL4fKffwHuB",
-    "8ZYV2WJhwFgkXspFT5cSP8"
-  ],
+  "already_known": 34,
+  "new_activities": [],
   "errors": [],
-  "status": "ok"
+  "status": "no_new_data"
 }
