@@ -1,5 +1,23 @@
 [
   {
+    "id": "jMTrQcMi9NNksXZyP5b9Zu",
+    "date": "2026-05-05T09:56:45.111Z",
+    "timezone": "Europe/Brussels",
+    "distance_m": 5385,
+    "heartrate_avg": 123,
+    "heartrate_max": 151,
+    "effort": 54,
+    "elevation_ascent": 9,
+    "calories": 437,
+    "temperature": 10,
+    "hr_zones": [959, 972, 741, 0, 0],
+    "track_lat": [],
+    "track_lng": [],
+    "hr_series": [],
+    "distance_series": [],
+    "speed_series": []
+  },
+  {
     "id": "rpv4L9frmcUHHf4Q3dzZ8a",
     "date": "2026-05-03T08:51:52.093Z",
     "timezone": "Europe/Brussels",
