@@ -7,6 +7,7 @@ sync.py — fetches new running activities from Tredict via the Anthropic API
 import json
 import os
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 import anthropic
@@ -75,8 +76,10 @@ def extract_json_array(text):
 
 def fetch_new_activities(known_ids):
     known_list = sorted(known_ids)
+    start_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT23:59:59.000Z")
     prompt = (
-        "Fetch all running activities from Tredict since 2026-04-01 using the activity-list tool.\n"
+        f"Fetch all running activities from Tredict using the activity-list tool "
+        f"with startDate='{start_date}' and endDate='2026-04-01T00:00:00.000Z'.\n"
         "IMPORTANT: Only process activities where sportType == 'running'. "
         "Skip any misc, cycling, swimming, indoor_rowing, or other non-running activities entirely.\n"
         f"For each running activity whose id is NOT in this list: {known_list}\n"
