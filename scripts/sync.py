@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-sync.py — pulls running activities from Tredict via Claude API (MCP),
+sync.py — pulls running activities from Tredict REST API,
 writes/updates data/activities.json, ready for Astro to build.
 """
 
@@ -10,14 +10,12 @@ import requests
 from pathlib import Path
 from datetime import datetime, timezone
 
-import anthropic
-
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 TREDICT_API_KEY   = os.environ["TREDICT_API_KEY"]
 DATA_PATH         = Path("data/activities.json")
 GPX_DIR           = Path("public/gpx")
 
-client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+TREDICT_BASE = "https://www.tredict.com/api/oauth/v2"
 
 
 def save_gpx(activity):
@@ -50,7 +48,7 @@ def fetch_activity_list(limit=20):
     """Pull recent running activities from Tredict REST API."""
     headers = {"Authorization": f"Bearer {TREDICT_API_KEY}"}
     resp = requests.get(
-        "https://www.tredict.com/api/v2/activities",
+        f"{TREDICT_BASE}/activityList",
         headers=headers,
         params={"pageSize": limit, "sportType": "running"}
     )
@@ -62,7 +60,7 @@ def fetch_activity_detail(activity_id):
     """Fetch full detail including time series for one activity."""
     headers = {"Authorization": f"Bearer {TREDICT_API_KEY}"}
     resp = requests.get(
-        f"https://www.tredict.com/api/v2/activities/{activity_id}",
+        f"{TREDICT_BASE}/activities/{activity_id}",
         headers=headers
     )
     resp.raise_for_status()
