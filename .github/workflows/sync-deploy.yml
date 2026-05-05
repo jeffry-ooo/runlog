@@ -6,6 +6,7 @@ on:
   schedule:
     - cron: '0 4-19 * * *'   # Every hour, 06:00–21:00 CEST
   workflow_dispatch:
+
 permissions:
   contents: write
   pages: write
@@ -37,23 +38,22 @@ jobs:
         timeout-minutes: 3
         continue-on-error: true
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TREDICT_API_KEY: ${{ secrets.TREDICT_API_KEY }}
         run: python scripts/sync.py
 
-      - name: Commit updated activities
+      - name: Commit updated data
         id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [[ -n "$(git status --porcelain data/activities.json)" ]]; then
-            git add data/activities.json
-            git commit -m "chore(data): nightly sync"
+          git add data/activities.json logs/sync-latest.json public/gpx/ 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "chore(data): sync $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             git push
             echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "No changes."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
   build:
