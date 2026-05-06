@@ -1,13 +1,15 @@
 {
-  "timestamp": "2026-05-06T05:26:04Z",
+  "timestamp": "2026-05-06T05:38:16Z",
   "connectivity": {
-    "ok": true,
-    "detail": "200"
+    "ok": false,
+    "detail": "401"
   },
-  "total_on_tredict": 71,
-  "skipped_non_running": 37,
-  "already_known": 34,
+  "total_on_tredict": 0,
+  "skipped_non_running": 0,
+  "already_known": 0,
   "new_activities": [],
-  "errors": [],
-  "status": "no_new_data"
+  "errors": [
+    "API unreachable: 401"
+  ],
+  "status": "error"
 }
