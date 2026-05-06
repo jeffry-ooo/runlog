@@ -13,7 +13,7 @@ from pathlib import Path
 import requests
 
 TOKEN     = os.environ.get("TREDICT_API_KEY", "")
-BASE      = "https://www.tredict.com"
+BASE      = "https://www.tredict.com/api/v2"
 DATA_PATH = Path("data/activities.json")
 GPX_DIR   = Path("public/gpx")
 LOG_PATH  = Path("logs/sync-latest.json")
@@ -39,10 +39,10 @@ def load_existing():
 # ── API calls ─────────────────────────────────────────────────────
 
 def check_connectivity():
-    """Ping activityList with pageSize=1 to verify auth."""
+    """Ping activities endpoint with pageSize=1 to verify auth."""
     try:
         r = requests.get(
-            BASE + "/api/oauth/v2/activityList",
+            BASE + "/activities",
             headers=auth(),
             params={"pageSize": 1},
             timeout=10,
@@ -55,25 +55,22 @@ def check_connectivity():
 def fetch_activity_list():
     """Return all activity stubs (up to 500)."""
     r = requests.get(
-        BASE + "/api/oauth/v2/activityList",
+        BASE + "/activities",
         headers=auth(),
         params={"pageSize": 500},
         timeout=30,
     )
     r.raise_for_status()
-    return r.json().get("_embedded", {}).get("activityList", [])
+    data = r.json()
+    if isinstance(data, list):
+        return data
+    return data.get("_embedded", {}).get("activityList", [])
 
 
 def fetch_activity_detail(item):
-    """
-    Fetch full activity detail.
-    Prefer the self-link from the list item; fall back to constructing the URL.
-    """
-    url = (
-        (item.get("_links") or {}).get("self", {}).get("href")
-        or f"{BASE}/api/oauth/v2/activity/{item.get('id') or item.get('_id')}"
-    )
-    r = requests.get(url, headers=auth(), timeout=30)
+    """Fetch full activity detail by ID."""
+    aid = item.get("id") or item.get("_id")
+    r = requests.get(BASE + f"/activities/{aid}", headers=auth(), timeout=30)
     r.raise_for_status()
     return r.json()
 

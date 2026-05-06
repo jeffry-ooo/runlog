@@ -59,7 +59,7 @@ jobs:
   build:
     name: Build Astro site
     needs: sync
-    if: always()
+    if: needs.sync.outputs.changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (latest after sync commit)
