@@ -6,11 +6,17 @@
     "distance_m": 5385,
     "heartrate_avg": 123,
     "heartrate_max": 151,
-    "effort": null,
+    "effort": 54,
     "elevation_ascent": 9,
     "calories": 437,
     "temperature": 21,
-    "hr_zones": [],
+    "hr_zones": [
+      959,
+      972,
+      741,
+      0,
+      0
+    ],
     "track_lat": [
       51.20422496460378,
       51.20420497376472,
