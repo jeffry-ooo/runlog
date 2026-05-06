@@ -13,7 +13,7 @@ from pathlib import Path
 import requests
 
 TOKEN     = os.environ.get("TREDICT_API_KEY", "")
-BASE      = "https://www.tredict.com/api/v2"
+BASE      = "https://www.tredict.com/api/oauth/v2"
 DATA_PATH = Path("data/activities.json")
 GPX_DIR   = Path("public/gpx")
 LOG_PATH  = Path("logs/sync-latest.json")
@@ -39,10 +39,10 @@ def load_existing():
 # ── API calls ─────────────────────────────────────────────────────
 
 def check_connectivity():
-    """Ping activities endpoint with pageSize=1 to verify auth."""
+    """Ping activityList endpoint with pageSize=1 to verify auth."""
     try:
         r = requests.get(
-            BASE + "/activities",
+            BASE + "/activityList",
             headers=auth(),
             params={"pageSize": 1},
             timeout=10,
@@ -55,7 +55,7 @@ def check_connectivity():
 def fetch_activity_list():
     """Return all activity stubs (up to 500)."""
     r = requests.get(
-        BASE + "/activities",
+        BASE + "/activityList",
         headers=auth(),
         params={"pageSize": 500},
         timeout=30,
@@ -68,9 +68,12 @@ def fetch_activity_list():
 
 
 def fetch_activity_detail(item):
-    """Fetch full activity detail by ID."""
-    aid = item.get("id") or item.get("_id")
-    r = requests.get(BASE + f"/activities/{aid}", headers=auth(), timeout=30)
+    """Fetch full activity detail via the HAL self link."""
+    url = (item.get("_links") or {}).get("self", {}).get("href")
+    if not url:
+        aid = item.get("id") or item.get("_id")
+        url = BASE + f"/activity/{aid}"
+    r = requests.get(url, headers=auth(), timeout=30)
     r.raise_for_status()
     return r.json()
 
