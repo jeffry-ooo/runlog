@@ -187,7 +187,8 @@ def main():
 
     # ── 2. Load existing ──────────────────────────────────────────
     existing  = load_existing()
-    known_ids = {a["id"] for a in existing}
+    # Exclude null-effort activities so they get re-fetched until effort is ready
+    known_ids = {a["id"] for a in existing if a.get("effort") is not None}
     log["already_known"] = len(known_ids)
     print(f"  {len(existing)} existing activities locally")
 
@@ -239,10 +240,13 @@ def main():
         try:
             detail   = fetch_activity_detail(item)
             activity = map_activity(detail)
-            new_activities.append(activity)
-            log["new_activities"].append(aid)
             dist = activity.get("distance_m", 0)
             date = (activity.get("date") or "")[:10]
+            if activity.get("effort") is None:
+                print(f"    ⏳ {date} — {dist / 1000:.1f} km (effort not ready, skipping)")
+                continue
+            new_activities.append(activity)
+            log["new_activities"].append(aid)
             print(f"    ✓ {date} — {dist / 1000:.1f} km")
             save_gpx(activity)
         except Exception as e:
