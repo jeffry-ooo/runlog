@@ -7,7 +7,7 @@ Always exits 0.
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
@@ -17,6 +17,11 @@ BASE      = "https://www.tredict.com/api/oauth/v2"
 DATA_PATH = Path("data/activities.json")
 GPX_DIR   = Path("public/gpx")
 LOG_PATH  = Path("logs/sync-latest.json")
+
+# How long to wait for Tredict to compute effort before storing anyway (no HR data)
+EFFORT_GRACE_HOURS = 24
+# How long to keep re-checking a stored null-effort activity for an updated score
+EFFORT_REFRESH_DAYS = 7
 
 
 # ── Helpers ──────────────────────────────────────────────────────
@@ -34,6 +39,19 @@ def load_existing():
     if DATA_PATH.exists():
         return json.loads(DATA_PATH.read_text())
     return []
+
+
+def parse_date(date_str):
+    if not date_str:
+        return None
+    try:
+        s = (date_str or "").replace("Z", "+00:00")
+        # Accept both full ISO and date-only strings
+        if "T" not in s:
+            s += "T00:00:00+00:00"
+        return datetime.fromisoformat(s)
+    except ValueError:
+        return None
 
 
 # ── API calls ─────────────────────────────────────────────────────
@@ -151,14 +169,17 @@ def save_gpx(activity):
 # ── Main ──────────────────────────────────────────────────────────
 
 def main():
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.now(timezone.utc)
+    ts  = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     log = {
         "timestamp":           ts,
         "connectivity":        None,
         "total_on_tredict":    0,
         "skipped_non_running": 0,
         "already_known":       0,
+        "pending_effort":      0,
         "new_activities":      [],
+        "updated_activities":  [],
         "errors":              [],
         "status":              "ok",
     }
@@ -186,11 +207,27 @@ def main():
         return
 
     # ── 2. Load existing ──────────────────────────────────────────
-    existing  = load_existing()
-    # Exclude null-effort activities so they get re-fetched until effort is ready
-    known_ids = {a["id"] for a in existing if a.get("effort") is not None}
-    log["already_known"] = len(known_ids)
-    print(f"  {len(existing)} existing activities locally")
+    existing    = load_existing()
+    by_id       = {a["id"]: a for a in existing}
+
+    # Re-check for effort only on activities stored with null effort that are
+    # recent enough that Tredict might still compute the score.
+    refresh_ids = {
+        a["id"] for a in existing
+        if a.get("effort") is None
+        and parse_date(a.get("date")) is not None
+        and (now - parse_date(a["date"])).days <= EFFORT_REFRESH_DAYS
+    }
+
+    # All other existing IDs are considered fully known (skip re-fetching).
+    known_ids = set(by_id.keys()) - refresh_ids
+
+    log["already_known"]  = len(known_ids)
+    log["pending_effort"] = len(refresh_ids)
+    print(
+        f"  {len(existing)} existing activities locally "
+        f"({len(known_ids)} known, {len(refresh_ids)} pending effort re-check)"
+    )
 
     # ── 3. Fetch list ─────────────────────────────────────────────
     print("Fetching activity list...")
@@ -208,7 +245,7 @@ def main():
     print(f"  {len(activity_list)} total activities on Tredict")
 
     # ── 4. Filter ─────────────────────────────────────────────────
-    to_fetch   = []
+    to_fetch    = []  # list of (item, is_refresh)
     non_running = 0
     for item in activity_list:
         if item.get("sportType") != "running":
@@ -219,52 +256,101 @@ def main():
             continue
         if aid in known_ids:
             continue
-        to_fetch.append(item)
+        to_fetch.append((item, aid in refresh_ids))
 
+    n_new     = sum(1 for _, is_ref in to_fetch if not is_ref)
+    n_refresh = sum(1 for _, is_ref in to_fetch if is_ref)
     log["skipped_non_running"] = non_running
-    print(f"  {non_running} non-running skipped, "
-          f"{len(activity_list) - non_running - len(to_fetch) - len(known_ids & {i.get('id') or i.get('_id') for i in activity_list if i.get('sportType') == 'running'})} already known")
-    print(f"  {len(to_fetch)} new running activities to sync")
+    print(
+        f"  {non_running} non-running skipped, "
+        f"{len(known_ids)} already known, "
+        f"{n_new} new, {n_refresh} pending effort re-check"
+    )
 
     if not to_fetch:
-        print("No new running activities.")
+        print("Nothing to fetch.")
         log["status"] = "no_new_data"
         write_log(log)
         return
 
     # ── 5. Fetch details ──────────────────────────────────────────
-    new_activities = []
-    for item in to_fetch:
+    new_activities     = []
+    updated_activities = []
+
+    for item, is_refresh in to_fetch:
         aid = item.get("id") or item.get("_id")
         print(f"  Fetching {aid}...")
         try:
             detail   = fetch_activity_detail(item)
             activity = map_activity(detail)
-            dist = activity.get("distance_m", 0)
-            date = (activity.get("date") or "")[:10]
+            dist     = activity.get("distance_m", 0)
+            date     = (activity.get("date") or "")[:10]
+
             if activity.get("effort") is None:
-                print(f"    ⏳ {date} — {dist / 1000:.1f} km (effort not ready, skipping)")
-                continue
-            new_activities.append(activity)
-            log["new_activities"].append(aid)
-            print(f"    ✓ {date} — {dist / 1000:.1f} km")
+                if is_refresh:
+                    # Already stored — effort still not available, nothing to update.
+                    print(f"    ⏳ {date} — {dist / 1000:.1f} km (effort still pending)")
+                    continue
+
+                # Truly new activity with no effort score yet.
+                run_date  = parse_date(activity.get("date"))
+                age_hours = (now - run_date).total_seconds() / 3600 if run_date else 999
+                if age_hours < EFFORT_GRACE_HOURS:
+                    print(
+                        f"    ⏳ {date} — {dist / 1000:.1f} km "
+                        f"(effort not ready, {age_hours:.0f}h old — will retry)"
+                    )
+                    continue
+                # Older than grace period: Tredict won't compute effort (no HR data).
+                # Store it anyway so it appears on the site.
+                print(
+                    f"    ✓ {date} — {dist / 1000:.1f} km "
+                    f"(no effort after {age_hours:.0f}h, storing as-is)"
+                )
+            else:
+                if is_refresh:
+                    print(f"    ✓ {date} — {dist / 1000:.1f} km (effort now {activity['effort']} — updated)")
+                else:
+                    print(f"    ✓ {date} — {dist / 1000:.1f} km")
+
+            if is_refresh:
+                updated_activities.append(activity)
+                log["updated_activities"].append(aid)
+            else:
+                new_activities.append(activity)
+                log["new_activities"].append(aid)
+
             save_gpx(activity)
+
         except Exception as e:
             msg = f"{aid}: {e}"
             print(f"    ✗ {msg}")
             log["errors"].append(msg)
 
     # ── 6. Write activities.json ───────────────────────────────────
-    if new_activities:
-        combined = new_activities + existing
-        combined.sort(key=lambda a: a.get("date", ""), reverse=True)
+    if new_activities or updated_activities:
+        # Merge into by_id dict to avoid duplicates, then re-sort.
+        for a in updated_activities:
+            by_id[a["id"]] = a
+        for a in new_activities:
+            by_id[a["id"]] = a
+        combined = sorted(by_id.values(), key=lambda a: a.get("date", ""), reverse=True)
         DATA_PATH.parent.mkdir(exist_ok=True)
         DATA_PATH.write_text(json.dumps(combined, indent=2))
-        print(f"\nDone. {len(new_activities)} new activit"
-              f"{'y' if len(new_activities) == 1 else 'ies'} added.")
+        n = len(new_activities)
+        u = len(updated_activities)
+        parts = []
+        if n:
+            parts.append(f"{n} new {'activity' if n == 1 else 'activities'}")
+        if u:
+            parts.append(f"{u} updated")
+        print(f"\nDone. {', '.join(parts)} written.")
+        log["status"] = "synced"
+    else:
+        log["status"] = "no_new_data"
 
     if log["errors"]:
-        log["status"] = "partial_error" if new_activities else "error"
+        log["status"] = "partial_error" if (new_activities or updated_activities) else "error"
 
     write_log(log)
     print(f"Log written → {LOG_PATH}")
