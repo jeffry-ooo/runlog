@@ -18,8 +18,10 @@ DATA_PATH = Path("data/activities.json")
 GPX_DIR   = Path("public/gpx")
 LOG_PATH  = Path("logs/sync-latest.json")
 
-# How long to wait for Tredict to compute effort before storing anyway (no HR data)
-EFFORT_GRACE_HOURS = 24
+# How long to wait for Tredict to compute effort before storing anyway (no HR data).
+# If effort isn't ready within an hour of upload it almost certainly won't come
+# (activity was recorded without a heart-rate monitor).
+EFFORT_GRACE_HOURS = 1
 # How long to keep re-checking a stored null-effort activity for an updated score
 EFFORT_REFRESH_DAYS = 7
 
@@ -277,7 +279,7 @@ def main():
     )
 
     if not to_fetch:
-        print("Nothing to fetch.")
+        print("Nothing to fetch — all running activities already known.")
         log["status"] = "no_new_data"
         write_log(log)
         return
@@ -356,7 +358,7 @@ def main():
         print(f"\nDone. {', '.join(parts)} written.")
         log["status"] = "synced"
     else:
-        log["status"] = "no_new_data"
+        log["status"] = "pending_effort" if to_fetch else "no_new_data"
 
     if log["errors"]:
         log["status"] = "partial_error" if (new_activities or updated_activities) else "error"
