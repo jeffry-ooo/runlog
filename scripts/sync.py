@@ -247,12 +247,19 @@ def main():
     # ── 4. Filter ─────────────────────────────────────────────────
     to_fetch    = []  # list of (item, is_refresh)
     non_running = 0
+    no_id_skipped = 0
     for item in activity_list:
         if item.get("sportType") != "running":
             non_running += 1
             continue
+        # Try top-level id fields first, then extract from the HAL self link URL.
         aid = item.get("id") or item.get("_id")
         if not aid:
+            href = (item.get("_links") or {}).get("self", {}).get("href", "")
+            aid = href.rstrip("/").split("/")[-1] or None
+        if not aid:
+            no_id_skipped += 1
+            print(f"  ⚠ Running activity with no resolvable ID — skipping: {item}")
             continue
         if aid in known_ids:
             continue
@@ -261,10 +268,12 @@ def main():
     n_new     = sum(1 for _, is_ref in to_fetch if not is_ref)
     n_refresh = sum(1 for _, is_ref in to_fetch if is_ref)
     log["skipped_non_running"] = non_running
+    log["skipped_no_id"]       = no_id_skipped
     print(
         f"  {non_running} non-running skipped, "
         f"{len(known_ids)} already known, "
         f"{n_new} new, {n_refresh} pending effort re-check"
+        + (f", {no_id_skipped} skipped (no ID)" if no_id_skipped else "")
     )
 
     if not to_fetch:
