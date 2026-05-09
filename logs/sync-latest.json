@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-05-09T21:41:25Z",
+  "timestamp": "2026-05-09T21:50:50Z",
   "connectivity": {
     "ok": true,
     "detail": "200"
@@ -11,5 +11,6 @@
   "new_activities": [],
   "updated_activities": [],
   "errors": [],
-  "status": "no_new_data"
+  "status": "no_new_data",
+  "skipped_no_id": 0
 }
