@@ -5,7 +5,7 @@
   "distance_m": 9585,
   "heartrate_avg": 136,
   "heartrate_max": 151,
-  "effort": null,
+  "effort": 125,
   "elevation_ascent": 70,
   "calories": 898,
   "temperature": 16,
