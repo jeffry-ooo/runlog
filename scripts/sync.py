@@ -297,6 +297,10 @@ def main():
             dist     = activity.get("distance_m", 0)
             date     = (activity.get("date") or "")[:10]
 
+            if dist < 100:
+                print(f"    ⚠ {date} — {dist}m too short, skipping (invalid/ghost run)")
+                continue
+
             if activity.get("effort") is None:
                 if is_refresh:
                     # Already stored — effort still not available, nothing to update.
