@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 sync.py — fetches new running activities from the Tredict REST API,
-writes data/activities.json, public/gpx/*.gpx, and logs/sync-latest.json.
+writes data/activities/<id>.json, public/gpx/*.gpx, and logs/sync-latest.json.
 Always exits 0.
 """
 
@@ -12,11 +12,11 @@ from pathlib import Path
 
 import requests
 
-TOKEN     = os.environ.get("TREDICT_API_KEY", "")
-BASE      = "https://www.tredict.com/api/oauth/v2"
-DATA_PATH = Path("data/activities.json")
-GPX_DIR   = Path("public/gpx")
-LOG_PATH  = Path("logs/sync-latest.json")
+TOKEN        = os.environ.get("TREDICT_API_KEY", "")
+BASE         = "https://www.tredict.com/api/oauth/v2"
+ACTIVITY_DIR = Path("data/activities")
+GPX_DIR      = Path("public/gpx")
+LOG_PATH     = Path("logs/sync-latest.json")
 
 # How long to wait for Tredict to compute effort before storing anyway (no HR data).
 # If effort isn't ready within an hour of upload it almost certainly won't come
@@ -38,9 +38,9 @@ def write_log(log):
 
 
 def load_existing():
-    if DATA_PATH.exists():
-        return json.loads(DATA_PATH.read_text())
-    return []
+    if not ACTIVITY_DIR.exists():
+        return []
+    return [json.loads(p.read_text()) for p in ACTIVITY_DIR.glob("*.json")]
 
 
 def parse_date(date_str):
@@ -342,16 +342,11 @@ def main():
             print(f"    ✗ {msg}")
             log["errors"].append(msg)
 
-    # ── 6. Write activities.json ───────────────────────────────────
+    # ── 6. Write per-activity JSON files ──────────────────────────
     if new_activities or updated_activities:
-        # Merge into by_id dict to avoid duplicates, then re-sort.
-        for a in updated_activities:
-            by_id[a["id"]] = a
-        for a in new_activities:
-            by_id[a["id"]] = a
-        combined = sorted(by_id.values(), key=lambda a: a.get("date", ""), reverse=True)
-        DATA_PATH.parent.mkdir(exist_ok=True)
-        DATA_PATH.write_text(json.dumps(combined, indent=2))
+        ACTIVITY_DIR.mkdir(parents=True, exist_ok=True)
+        for a in new_activities + updated_activities:
+            (ACTIVITY_DIR / f"{a['id']}.json").write_text(json.dumps(a, indent=2))
         n = len(new_activities)
         u = len(updated_activities)
         parts = []
