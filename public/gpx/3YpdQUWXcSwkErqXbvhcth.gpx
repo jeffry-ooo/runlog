@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="jeffry.running" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><time>2026-05-16T06:47:08.315Z</time></metadata>
+  <trk>
+    <trkseg>
+      <trkpt lat="51.29232" lon="4.84543"></trkpt>
+      <trkpt lat="51.29232" lon="4.84543"></trkpt>
+      <trkpt lat="51.29231" lon="4.84541"></trkpt>
+      <trkpt lat="51.29231" lon="4.84540"></trkpt>
+      <trkpt lat="51.29230" lon="4.84539"></trkpt>
+      <trkpt lat="51.29230" lon="4.84538"></trkpt>
+      <trkpt lat="51.29229" lon="4.84537"></trkpt>
+    </trkseg>
+  </trk>
+</gpx>
