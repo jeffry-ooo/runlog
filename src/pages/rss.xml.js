@@ -1,5 +1,5 @@
 import rss from '@astrojs/rss';
-import activities from '../../data/activities.json';
+import activities from '../lib/activities.js';
 
 export function GET(context) {
   return rss({

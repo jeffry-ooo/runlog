@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import activities from '../../data/activities.json';
+import activities from '../lib/activities.js';
 
 function fmtDist(m) {
   return (m / 1000).toFixed(1) + 'KM';
