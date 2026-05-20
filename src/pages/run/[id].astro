@@ -19,10 +19,16 @@ const fmtPace = (secPerKm) => {
   const s = Math.round(secPerKm % 60).toString().padStart(2, '0');
   return `${m}:${s}/KM`;
 };
-const fmtDate = (iso, tz) =>
-  new Date(iso)
-    .toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: tz })
-    .toUpperCase();
+const fmtDate = (iso, tz) => {
+  const d = new Date(iso);
+  const runYear = d.toLocaleDateString('en-CA', { timeZone: tz }).slice(0, 4);
+  const buildYear = String(new Date().getFullYear());
+  const weekday = d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: tz });
+  const day     = d.toLocaleDateString('en-GB', { day: 'numeric',   timeZone: tz });
+  const month   = d.toLocaleDateString('en-GB', { month: 'short',   timeZone: tz });
+  const year    = runYear !== buildYear ? ` ${runYear}` : '';
+  return `${weekday} ${day} ${month}${year}`.toUpperCase();
+};
 const fmtTime = (iso, tz) =>
   new Date(iso).toLocaleTimeString('en-GB', {
     hour: '2-digit', minute: '2-digit', timeZone: tz, hour12: false,

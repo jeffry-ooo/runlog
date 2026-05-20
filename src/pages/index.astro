@@ -7,14 +7,14 @@ function fmtDist(m) {
 }
 
 function fmtDate(iso, tz) {
-  const today = new Date(new Date().toLocaleDateString('en-CA', { timeZone: tz }));
-  const runDay = new Date(new Date(iso).toLocaleDateString('en-CA', { timeZone: tz }));
-  const diff = Math.round((today.getTime() - runDay.getTime()) / 86400000);
-  if (diff === 0) return 'TODAY';
-  if (diff === 1) return 'YESTERDAY';
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'long', timeZone: tz
-  }).toUpperCase();
+  const d = new Date(iso);
+  const runYear = d.toLocaleDateString('en-CA', { timeZone: tz }).slice(0, 4);
+  const buildYear = String(new Date().getFullYear());
+  const weekday = d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: tz });
+  const day     = d.toLocaleDateString('en-GB', { day: 'numeric',   timeZone: tz });
+  const month   = d.toLocaleDateString('en-GB', { month: 'short',   timeZone: tz });
+  const year    = runYear !== buildYear ? ` ${runYear}` : '';
+  return `${weekday} ${day} ${month}${year}`.toUpperCase();
 }
 
 function fmtTime(iso, tz) {
