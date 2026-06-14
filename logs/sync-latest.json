@@ -1,16 +1,18 @@
 {
-  "timestamp": "2026-06-13T20:11:57Z",
+  "timestamp": "2026-06-14T08:11:13Z",
   "connectivity": {
     "ok": true,
     "detail": "200"
   },
-  "total_on_tredict": 95,
+  "total_on_tredict": 96,
   "skipped_non_running": 46,
   "already_known": 47,
   "pending_effort": 2,
-  "new_activities": [],
+  "new_activities": [
+    "7LSVMuS9Gc8gkaeCvfpCuQ"
+  ],
   "updated_activities": [],
   "errors": [],
-  "status": "pending_effort",
+  "status": "synced",
   "skipped_no_id": 0
 }
