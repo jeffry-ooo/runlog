@@ -1,17 +1,16 @@
 {
-  "timestamp": "2026-08-26T04:33:39Z",
+  "timestamp": "2026-08-26T05:28:18Z",
   "connectivity": {
-    "ok": false,
-    "detail": "HTTPSConnectionPool(host='www.tredict.com', port=443): Read timed out. (read timeout=10)"
+    "ok": true,
+    "detail": "200"
   },
-  "total_on_tredict": 0,
-  "skipped_non_running": 0,
-  "already_known": 0,
-  "pending_effort": 0,
+  "total_on_tredict": 124,
+  "skipped_non_running": 51,
+  "already_known": 70,
+  "pending_effort": 3,
   "new_activities": [],
   "updated_activities": [],
-  "errors": [
-    "API unreachable: HTTPSConnectionPool(host='www.tredict.com', port=443): Read timed out. (read timeout=10)"
-  ],
-  "status": "error"
+  "errors": [],
+  "status": "pending_effort",
+  "skipped_no_id": 0
 }
