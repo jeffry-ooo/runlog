@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-04T17:19:43Z",
+  "timestamp": "2026-09-04T20:09:29Z",
   "connectivity": {
     "ok": true,
     "detail": "200"
@@ -8,9 +8,11 @@
   "skipped_non_running": 52,
   "already_known": 74,
   "pending_effort": 4,
-  "new_activities": [],
+  "new_activities": [
+    "vyJTk4cWceegfKCizZRCPh"
+  ],
   "updated_activities": [],
   "errors": [],
-  "status": "pending_effort",
+  "status": "synced",
   "skipped_no_id": 0
 }
