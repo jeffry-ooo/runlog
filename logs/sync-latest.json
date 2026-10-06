@@ -1,13 +1,13 @@
 {
-  "timestamp": "2026-10-05T11:05:32Z",
+  "timestamp": "2026-10-06T10:57:59Z",
   "connectivity": {
     "ok": true,
     "detail": "200"
   },
   "total_on_tredict": 146,
   "skipped_non_running": 56,
-  "already_known": 87,
-  "pending_effort": 3,
+  "already_known": 88,
+  "pending_effort": 2,
   "new_activities": [],
   "updated_activities": [],
   "errors": [],
