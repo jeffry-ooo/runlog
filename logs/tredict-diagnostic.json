@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-13T15:29:36Z",
+  "timestamp": "2026-10-14T13:14:17Z",
   "results": [
     {
       "endpoint": "/api/v2/activities",
@@ -67,9 +67,9 @@
     {
       "endpoint": "/api/oauth/v2/activityList",
       "auth": "Bearer",
-      "status": 200,
-      "success": true,
-      "response_preview": "{\"_links\":{\"self\":{\"href\":\"https://www.tredict.com/api/oauth/v2/activityList?pageSize=500\"}},\"count\":146,\"_embedded\":{\"activityList\":[{\"_links\":{\"self\":{\"href\":\"https://www.tredict.com/api/oauth/v2/ac"
+      "status": 401,
+      "success": false,
+      "response_preview": "Please log into the Tredict web app to automatically reactivate this token. Personal API tokens need a real human from time to time in the GUI to stay alive."
     },
     {
       "endpoint": "/api/oauth/v2/activityList",
@@ -88,9 +88,9 @@
     {
       "endpoint": "/api/mcp/v2/activities",
       "auth": "Bearer",
-      "status": 404,
+      "status": 401,
       "success": false,
-      "response_preview": "Not Found"
+      "response_preview": "Please log into the Tredict web app to automatically reactivate this token. Personal API tokens need a real human from time to time in the GUI to stay alive."
     },
     {
       "endpoint": "/api/mcp/v2/activities",
@@ -109,9 +109,9 @@
     {
       "endpoint": "/api/mcp/v2/activityList",
       "auth": "Bearer",
-      "status": 404,
+      "status": 401,
       "success": false,
-      "response_preview": "Not Found"
+      "response_preview": "Please log into the Tredict web app to automatically reactivate this token. Personal API tokens need a real human from time to time in the GUI to stay alive."
     },
     {
       "endpoint": "/api/mcp/v2/activityList",
@@ -128,5 +128,5 @@
       "response_preview": "Unauthorized"
     }
   ],
-  "summary": "1/18 combinations succeeded"
+  "summary": "0/18 combinations succeeded"
 }
