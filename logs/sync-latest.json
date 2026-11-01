@@ -1,17 +1,18 @@
 {
-  "timestamp": "2026-11-01T10:58:21Z",
+  "timestamp": "2026-11-01T17:01:17Z",
   "connectivity": {
-    "ok": false,
-    "detail": "401"
+    "ok": true,
+    "detail": "200"
   },
-  "total_on_tredict": 0,
-  "skipped_non_running": 0,
-  "already_known": 0,
+  "total_on_tredict": 152,
+  "skipped_non_running": 57,
+  "already_known": 94,
   "pending_effort": 0,
-  "new_activities": [],
-  "updated_activities": [],
-  "errors": [
-    "API unreachable: 401"
+  "new_activities": [
+    "q18Sn5tGiuQ3urEpp5y6bb"
   ],
-  "status": "error"
+  "updated_activities": [],
+  "errors": [],
+  "status": "synced",
+  "skipped_no_id": 0
 }
